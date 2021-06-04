@@ -10,7 +10,7 @@ from sql.utils.workflow_audit import Audit
 from sql.engines import get_engine
 
 
-def execute(workflow_id, user=None):
+def execute(workflow_id, user=None, execute_direct=0):
     """为延时或异步任务准备的execute, 传入工单ID和执行人信息"""
     # 使用当前读防止重复执行
     with transaction.atomic():
@@ -32,6 +32,8 @@ def execute(workflow_id, user=None):
                   operator_display=user.display if user else '系统'
                   )
     execute_engine = get_engine(instance=workflow_detail.instance)
+    if execute_direct:
+        return execute_engine.execute(db_name=workflow_detail.db_name, sql=workflow_detail.sqlworkflowcontent.sql_content)
     return execute_engine.execute_workflow(workflow=workflow_detail)
 
 
@@ -77,12 +79,7 @@ def execute_callback(task):
     audit_id = Audit.detail_by_workflow_id(workflow_id=workflow_id,
                                            workflow_type=WorkflowDict.workflow_type['sqlreview']).audit_id
     
-    operation_info=""
-    try:
-        operation_info=task.result.error
-    except:
-        pass
-    
+    operation_info=task.result.error
     if not operation_info:
         operation_info='执行结果：{}'.format(workflow.get_status_display())
 

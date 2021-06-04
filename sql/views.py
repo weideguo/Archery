@@ -155,10 +155,12 @@ def detail(request, workflow_id):
     else:
         run_date = ''
 
-    # sql_workflow 的is_manual=1时 只有超级用户有审批权限 sql_users is_superuser=1
+    
     if SqlWorkflow.objects.filter(id=workflow_id,is_manual=1).values('is_manual'):
-        if not Users.objects.filter(username=request.user.username,is_superuser=1):
-            is_can_review=False
+        ##sql_workflow 的is_manual=1时 只有超级用户有审批权限 sql_users is_superuser=1
+        #if not Users.objects.filter(username=request.user.username,is_superuser=1):
+        #    is_can_review=False
+        is_can_review = request.user.has_perm('sql.execute_sql_direct') 
 
     # 获取是否开启手工执行确认
     manual = SysConfig().get('manual')

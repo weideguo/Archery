@@ -299,8 +299,8 @@ class MysqlEngine(EngineBase):
             return result
         
         # 原生执行
-        if workflow.is_manual == 1:
-            return self.execute(db_name=workflow.db_name, sql=workflow.sqlworkflowcontent.sql_content)
+        #if workflow.is_manual == 1:
+        #    return self.execute(db_name=workflow.db_name, sql=workflow.sqlworkflowcontent.sql_content)
            
         # inception执行
         return self.inc_engine.execute(workflow)

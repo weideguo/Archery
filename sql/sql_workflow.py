@@ -202,7 +202,8 @@ def submit(request):
                 is_backup=False if force_commit else is_backup,
                 instance=instance,
                 db_name=db_name,
-                is_manual=1 if force_commit else 0,
+                #is_manual=1 if force_commit else 0,
+                is_manual=0,
                 syntax_type=0 if force_commit else check_result.syntax_type,
                 create_time=timezone.now(),
                 run_date_start=run_date_start or None,
@@ -257,10 +258,11 @@ def detail_content(request):
                     review_result.rows += [ReviewResult(inception_result=r)]
                 rows = review_result.json()
         except IndexError:
-            if SqlWorkflow.objects.filter(id=workflow_id,is_manual=1).values('is_manual'):
-                errormessage="直接由后端数据库运行，需要由超级管理员审批"
-            else:
-                errormessage="Json decode failed.执行结果Json解析失败, 请联系管理员"
+            #if SqlWorkflow.objects.filter(id=workflow_id,is_manual=1).values('is_manual'):
+            #    errormessage="直接由后端数据库运行，需要由超级管理员审批"
+            #else:
+            #    errormessage="Json decode failed.执行结果Json解析失败, 请联系管理员"
+            errormessage="Json decode failed.执行结果Json解析失败, 请联系管理员，或者需要手动提交。"
             review_result.rows += [ReviewResult(
                 id=1,
                 sql=workflow_detail.sqlworkflowcontent.sql_content,
@@ -401,37 +403,61 @@ def execute(request):
                                            workflow_type=WorkflowDict.workflow_type['sqlreview']).audit_id
     # 根据执行模式进行对应修改
     mode = request.POST.get('mode')
-    # 交由系统执行
     if mode == "auto":
-        # 修改工单状态为排队中
-        SqlWorkflow(id=workflow_id, status="workflow_queuing").save(update_fields=['status'])
-        # 删除定时执行任务
-        schedule_name = f"sqlreview-timing-{workflow_id}"
-        del_schedule(schedule_name)
-        # 加入执行队列
-        async_task('sql.utils.execute_sql.execute', workflow_id, request.user,
-                   hook='sql.utils.execute_sql.execute_callback',
-                   timeout=-1, task_name=f'sqlreview-execute-{workflow_id}')
-        # 增加工单日志
-        Audit.add_log(audit_id=audit_id,
-                      operation_type=5,
-                      operation_type_desc='执行工单',
-                      operation_info='工单执行排队中',
-                      operator=request.user.username,
-                      operator_display=request.user.display)
-
-    # 线下手工执行
-    elif mode == "manual":
-        # 将流程状态修改为执行结束
-        SqlWorkflow(id=workflow_id, status="workflow_finish", finish_time=datetime.datetime.now()
-                    ).save(update_fields=['status', 'finish_time'])
-        # 增加工单日志
-        Audit.add_log(audit_id=audit_id,
-                      operation_type=6,
-                      operation_type_desc='手工工单',
-                      operation_info='确认手工执行结束',
-                      operator=request.user.username,
-                      operator_display=request.user.display)
+        execute_direct=0
+    else:
+        execute_direct=1
+    
+    # 修改工单状态为排队中
+    SqlWorkflow(id=workflow_id, status="workflow_queuing").save(update_fields=['status'])
+    # 删除定时执行任务
+    schedule_name = f"sqlreview-timing-{workflow_id}"
+    del_schedule(schedule_name)
+    # 加入执行队列
+    async_task('sql.utils.execute_sql.execute', workflow_id, request.user, execute_direct,
+               hook='sql.utils.execute_sql.execute_callback',
+               timeout=-1, task_name=f'sqlreview-execute-{workflow_id}')
+    # 增加工单日志
+    Audit.add_log(audit_id=audit_id,
+                  operation_type=5,
+                  operation_type_desc='执行工单',
+                  operation_info='工单执行排队中',
+                  operator=request.user.username,
+                  operator_display=request.user.display)    
+    
+    
+    # 交由系统执行
+    #if mode == "auto":
+    #    # 修改工单状态为排队中
+    #    SqlWorkflow(id=workflow_id, status="workflow_queuing").save(update_fields=['status'])
+    #    # 删除定时执行任务
+    #    schedule_name = f"sqlreview-timing-{workflow_id}"
+    #    del_schedule(schedule_name)
+    #    # 加入执行队列
+    #    async_task('sql.utils.execute_sql.execute', workflow_id, request.user,
+    #               hook='sql.utils.execute_sql.execute_callback',
+    #               timeout=-1, task_name=f'sqlreview-execute-{workflow_id}')
+    #    # 增加工单日志
+    #    Audit.add_log(audit_id=audit_id,
+    #                  operation_type=5,
+    #                  operation_type_desc='执行工单',
+    #                  operation_info='工单执行排队中',
+    #                  operator=request.user.username,
+    #                  operator_display=request.user.display)
+    #
+    ## 线下手工执行
+    #elif mode == "manual":
+    #    # 将流程状态修改为执行结束
+    #    SqlWorkflow(id=workflow_id, status="workflow_finish", finish_time=datetime.datetime.now()
+    #                ).save(update_fields=['status', 'finish_time'])
+    #    # 增加工单日志
+    #    Audit.add_log(audit_id=audit_id,
+    #                  operation_type=6,
+    #                  operation_type_desc='手工工单',
+    #                  operation_info='确认手工执行结束',
+    #                  operator=request.user.username,
+    #                  operator_display=request.user.display)
+                   
     return HttpResponseRedirect(reverse('sql:detail', args=(workflow_id,)))
 
 

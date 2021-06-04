@@ -93,13 +93,13 @@ AUTH_USER_MODEL = "sql.Users"
 
 # 密码校验
 AUTH_PASSWORD_VALIDATORS = [
-    #{
-    #    'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    #},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
         'OPTIONS': {
-            'min_length': 6,
+            'min_length': 9,
         }
     },
     {
@@ -122,10 +122,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'archery',
-        'USER': 'archery',
-        'PASSWORD': 'archery',
+        'USER': 'root',
+        'PASSWORD': '',
         'HOST': '127.0.0.1',
-        'PORT': '1039',
+        'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             'charset': 'utf8mb4'
@@ -140,7 +140,7 @@ DATABASES = {
 # Django-Q
 Q_CLUSTER = {
     'name': 'archery',
-    'workers': 2,
+    'workers': 4,
     'recycle': 500,
     'timeout': 60,
     'compress': True,
@@ -156,18 +156,18 @@ Q_CLUSTER = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/10",
+        "LOCATION": "redis://127.0.0.1:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": "my_redis_passwd"
+            "PASSWORD": ""
         }
     },
     "dingding": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/11",
+        "LOCATION": "redis://127.0.0.1:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": "my_redis_passwd"
+            "PASSWORD": ""
         }
     }
 }

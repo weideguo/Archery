@@ -656,6 +656,7 @@ class Permission(models.Model):
             ('archive_apply', '提交归档申请'),
             ('archive_review', '审核归档申请'),
             ('archive_mgt', '管理归档申请'),
+            ('execute_sql_direct','直接在后端执行sql'),
         )
 
 
