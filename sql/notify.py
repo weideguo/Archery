@@ -5,7 +5,7 @@ from itertools import chain
 
 from django.contrib.auth.models import Group
 from common.config import SysConfig
-from sql.models import QueryPrivilegesApply, Users, SqlWorkflow, ResourceGroup, ArchiveConfig
+from sql.models import QueryPrivilegesApply, Users, SqlWorkflow, ResourceGroup, ArchiveConfig, WorkflowLog
 from sql.utils.resource_group import auth_group_users
 from common.utils.sendmsg import MsgSender
 from common.utils.const import WorkflowDict
@@ -141,17 +141,20 @@ def notify_for_audit(audit_id, **kwargs):
     else:
         raise Exception('工单类型不正确')
 
+    operator = kwargs.get('operator', '')
     # 准备消息格式
     if status == WorkflowDict.workflow_status['audit_wait']:  # 申请阶段
-        msg_title = "[{}]新的工单申请#{}".format(workflow_type_display, audit_id)
+        _msg_title = '新的工单申请'
+        msg_title = "[{}]{}#{}".format(workflow_type_display, _msg_title ,audit_id)
         # 接收人，发送给该资源组内对应权限组所有的用户
         auth_group_names = Group.objects.get(id=audit_detail.current_audit).name
         msg_to = auth_group_users([auth_group_names], audit_detail.group_id)
         msg_cc = Users.objects.filter(username__in=kwargs.get('cc_users', []))
         # 消息内容
-        msg_content = '''发起时间：{}\n发起人：{}\n组：{}\n目标实例：{}\n数据库：{}\n审批流程：{}\n当前审批：{}\n工单名称：{}\n工单地址：{}\n工单详情预览：{}\n'''.format(
+        msg_content = '''发起时间：{}\n发起人：{}\n操作人：{}\n组：{}\n目标实例：{}\n数据库：{}\n审批流程：{}\n当前审批：{}\n工单名称：{}\n工单地址：{}\n工单详情预览：{}\n'''.format(
             workflow_detail.create_time.strftime('%Y-%m-%d %H:%M:%S'),
             workflow_from,
+            operator,
             group_name,
             instance,
             db_name,
@@ -166,9 +169,10 @@ def notify_for_audit(audit_id, **kwargs):
         msg_to = [Users.objects.get(username=audit_detail.create_user)]
         msg_cc = Users.objects.filter(username__in=kwargs.get('cc_users', []))
         # 消息内容
-        msg_content = '''发起时间：{}\n发起人：{}\n组：{}\n目标实例：{}\n数据库：{}\n审批流程：{}\n工单名称：{}\n工单地址：{}\n工单详情预览：{}\n'''.format(
+        msg_content = '''发起时间：{}\n发起人：{}\n操作人：{}\n组：{}\n目标实例：{}\n数据库：{}\n审批流程：{}\n工单名称：{}\n工单地址：{}\n工单详情预览：{}\n'''.format(
             workflow_detail.create_time.strftime('%Y-%m-%d %H:%M:%S'),
             workflow_from,
+            operator,
             group_name,
             instance,
             db_name,
@@ -197,9 +201,10 @@ def notify_for_audit(audit_id, **kwargs):
         msg_to = auth_group_users(auth_group_names, audit_detail.group_id)
         msg_cc = Users.objects.filter(username__in=kwargs.get('cc_users', []))
         # 消息内容
-        msg_content = '''发起时间：{}\n发起人：{}\n组：{}\n目标实例：{}\n数据库：{}\n工单名称：{}\n工单地址：{}\n终止原因：{}'''.format(
+        msg_content = '''发起时间：{}\n发起人：{}\n操作人：{}\n组：{}\n目标实例：{}\n数据库：{}\n工单名称：{}\n工单地址：{}\n终止原因：{}'''.format(
             workflow_detail.create_time.strftime('%Y-%m-%d %H:%M:%S'),
             workflow_from,
+            operator,
             group_name,
             instance,
             db_name,
@@ -289,26 +294,6 @@ def notify_for_binlog2sql(task):
         msg_content = f'解析的SQL文件为{task.result[1]}，请到指定目录查看'
     else:
         msg_title = '[Archery 通知]Binlog2SQL执行失败'
-        msg_content = f'{task.result}'
-    # 发送
-    msg_to = [task.kwargs['user']]
-    __send(msg_title, msg_content, msg_to)
-
-
-def notify_for_my2sql(task):
-    """
-    my2sql执行结束的通知
-    :param task:
-    :return:
-    """
-    # 判断是否开启消息通知，未开启直接返回
-    if not __notify_cnf_status():
-        return None
-    if task.success:
-        msg_title = '[Archery 通知]My2SQL执行结束'
-        msg_content = f'解析的SQL文件在{task.result[1]}目录下，请前往查看'
-    else:
-        msg_title = '[Archery 通知]My2SQL执行失败'
         msg_content = f'{task.result}'
     # 发送
     msg_to = [task.kwargs['user']]

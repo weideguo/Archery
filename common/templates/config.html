@@ -414,18 +414,6 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="notify_phase_control"
-                                       class="col-sm-4 control-label">NOTIFY_PHASE_CONTROL</label>
-                                <div class="col-sm-5">
-                                    <select id="notify_phase_control" key="notify_phase_control"
-                                            class="selectpicker show-tick form-control bs-select-hidden"
-                                            data-live-search="true"
-                                            data-none-selected-text="工单通知分阶段控制"
-                                            multiple required>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
                                 <label for="mail"
                                        class="col-sm-4 control-label">MAIL</label>
                                 <div class="col-sm-8">
@@ -739,17 +727,6 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="my2sql"
-                                       class="col-sm-4 control-label">MY2SQL</label>
-                                <div class="col-sm-5">
-                                    <input type="text" class="form-control"
-                                           id="my2sql"
-                                           key="my2sql"
-                                           value="{{ config.my2sql }}"
-                                           placeholder="my2sql调用路径，类似/opt/archery/src/plugins/my2sql">
-                                </div>
-                            </div>
-                            <div class="form-group">
                                 <label for="default_auth_group"
                                        class="col-sm-4 control-label">DEFAULT_AUTH_GROUP</label>
                                 <div class="col-sm-5">
@@ -826,6 +803,31 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <label for="use_pma"
+                                       class="col-sm-4 control-label">USE_PMA</label>
+                                <div class="col-sm-8">
+                                    <div class="switch switch-small">
+                                        <label>
+                                            <input id="use_pma" key="use_pma"
+                                                   value="{{ config.use_pma }}"
+                                                   type="checkbox"> 是否集成PMA登录
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="query_allow_hosts"
+                                       class="col-sm-4 control-label">QUERY_ALLOW_HOSTS</label>
+                                <div class="col-sm-5">
+                                    <input type="text" class="form-control"
+                                           id="query_allow_hosts"
+                                           key="query_allow_hosts"
+                                           value="{{ config.query_allow_hosts }}"
+                                           placeholder="允许普通账号查询的ip，多个用逗号分隔，为空则不限制">
+                                </div>
+                            </div>
+                        
                         </div>
                         <div class="form-group">
                             <div class="col-sm-offset-4 col-sm-10">
@@ -872,32 +874,6 @@
     <link href="{% static 'bootstrap-switch/css/bootstrap-switch.min.css' %}" rel="stylesheet" type="text/css"/>
     <script src="{% static 'bootstrap-switch/js/bootstrap-switch.min.js' %}"></script>
     <script>
-        // notify_phase_control参数处理
-        $(document).ready(function (){
-            let cfg_value = "{{ config.notify_phase_control }}";
-            let phases = ['Apply', 'Pass', 'Execute', 'Cancel'];
-            // notify_phase_control未设置时默认全部开启
-            if (cfg_value === "") {
-                for (let i in phases) {
-                    let phase = "<option value=\"" + phases[i]+ "\" selected>" + phases[i] + "</option>"
-                    $("#notify_phase_control").append(phase)
-                }
-            } else {
-                for (let i=0;i<phases.length;i++) {
-                    let phase = "";
-                    let cfg_arr = cfg_value.split(',');
-                    if (cfg_arr.indexOf(phases[i]) >= 0) {
-                        phase = "<option value=\"" + phases[i]+ "\" selected>" + phases[i] + "</option>"
-                    } else {
-                        phase = "<option value=\"" + phases[i]+ "\">" + phases[i] + "</option>"
-                    }
-                    $("#notify_phase_control").append(phase)
-                }
-            }
-            $("#notify_phase_control").selectpicker('render');
-            $("#notify_phase_control").selectpicker('refresh');
-        })
-
         //配置项切换
         $("#config").change(function () {
             sessionStorage.setItem('config_type', $("#config").val());

@@ -8,7 +8,7 @@ import sql.query_privileges
 import sql.sql_optimize
 from common import auth, config, workflow, dashboard, check
 from sql import views, sql_workflow, sql_analyze, query, slowlog, instance, instance_account, db_diagnostic, \
-    resource_group, binlog, data_dictionary, archiver, audit_log
+    resource_group, binlog, data_dictionary, archiver, audit, audit_log
 from sql.utils import tasks
 from common.utils import ding_api
 
@@ -47,11 +47,11 @@ urlpatterns = [
     path('group/', views.group),
     path('grouprelations/<int:group_id>/', views.groupmgmt),
     path('instance/', views.instance),
+    path('pma_login/', views.pma_login),
     path('instanceaccount/', views.instanceaccount),
     path('database/', views.database),
     path('instanceparam/', views.instance_param),
     path('binlog2sql/', views.binlog2sql),
-    path('my2sql/', views.my2sql),
     path('schemasync/', views.schemasync),
     path('archive/', views.archive),
     path('archive/<int:id>/', views.archive_detail, name='archive_detail'),
@@ -92,6 +92,7 @@ urlpatterns = [
     path('group/user_all_instances/', resource_group.user_all_instances),
 
     path('instance/list/', instance.lists),
+    path('instance/detail/', instance.detail),
 
     path('instance/user/list', instance_account.users),
     path('instance/user/create/', instance_account.create),
@@ -130,7 +131,6 @@ urlpatterns = [
 
     path('binlog/list/', binlog.binlog_list),
     path('binlog/binlog2sql/', binlog.binlog2sql),
-    path('binlog/my2sql/', binlog.my2sql),
     path('binlog/del_log/', binlog.del_binlog),
 
     path('slowquery/review/', slowlog.slowquery_review),
@@ -154,6 +154,8 @@ urlpatterns = [
     path('archive/switch/', archiver.archive_switch),
     path('archive/once/', archiver.archive_once),
     path('archive/log/', archiver.archive_log),
+
+    path('auditx/', audit.audit),
 
     path('4admin/sync_ding_user/', ding_api.sync_ding_user),
 

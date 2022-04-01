@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="wdg" />
+    <title>pma</title>
+    <script src="/static/jquery/jquery.min.js"></script>
+</head>
+
+<body>
+<!--需要先设置代理实现pma的首页跟当前同源-->
+<iframe id="pmaiframe"  frameborder="0" width="100%"  height="800px" scrolling="auto" onload="logout()" src="/pma/index.php"></iframe>
+
+</body>
+
+<script type="text/javascript" language="javascript"> 
+    // 不生效
+    function logout(){
+        try{
+            $("#pmaiframe").contents().find(".logout")[0].click(); 
+            console.log("logout done");
+        } catch(err){
+            console.log("not a logout page");
+        }
+        // window.close();
+    }
+</script>
+
+</script>
+</html>

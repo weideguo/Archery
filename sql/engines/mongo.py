@@ -256,19 +256,17 @@ class MongoEngine(EngineBase):
         """审核时执行的语句"""
 
         if self.user and self.password and self.port and self.host:
-            msg = ""
-            auth_db = self.instance.db_name or 'admin'
             try:
-                if not sql.startswith('var host='): #在master节点执行的情况
-                    cmd = "{mongo} --quiet -u {uname} -p '{password}' {host}:{port}/{auth_db} <<\\EOF\ndb=db.getSiblingDB(\"{db_name}\");{slave_ok}printjson({sql})\nEOF".format(
-                        mongo=mongo, uname=self.user, password=self.password, host=self.host, port=self.port, db_name=db_name, sql=sql, auth_db=auth_db, slave_ok=slave_ok)
+                if not sql.startswith('var host='):  # 在master节点执行的情况
+                    cmd = "{mongo} --quiet -u {uname} -p '{password}' {host}:{port}/admin <<\\EOF\ndb=db.getSiblingDB(\"{db_name}\");{slave_ok}printjson({sql})\nEOF".format(
+                        mongo=mongo, uname=self.user, password=self.password, host=self.host, port=self.port,
+                        db_name=db_name, sql=sql, slave_ok=slave_ok)
                 else:
-                    cmd = "{mongo} --quiet -u {user} -p '{password}' {host}:{port}/{auth_db} <<\\EOF\nrs.slaveOk();{sql}\nEOF".format(
-                        mongo=mongo, user=self.user, password=self.password, host=self.host, port=self.port, db_name=db_name, sql=sql, auth_db=auth_db)
+                    cmd = "{mongo} --quiet -u {user} -p '{password}'  {host}:{port}/admin <<\\EOF\nrs.slaveOk();{sql}\nEOF".format(
+                        mongo=mongo, user=self.user, password=self.password, host=self.host, port=self.port,
+                        db_name=db_name, sql=sql)
                 logger.debug(cmd)
-                p = subprocess.Popen(cmd, shell=True,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
+                p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                      universal_newlines=True)
                 re_msg = []
                 for line in iter(p.stdout.read, ''):
@@ -281,7 +279,7 @@ class MongoEngine(EngineBase):
                         # 第一行可能是WARNING语句，因此跳过
                         continue
                     _re_msg.append(_line)
-                
+
                 msg = '\n'.join(_re_msg)
 
             except Exception as e:
@@ -307,9 +305,10 @@ class MongoEngine(EngineBase):
         slave_msg = self.exec_cmd(sql)
         if slave_msg.lower().find('undefined') < 0:
             sp_host = slave_msg.replace("\"", "").split(":")
-            self.host = sp_host[0]
-            self.port = int(sp_host[1])
-            return True
+            # self.host = sp_host[0]
+            # self.port = int(sp_host[1])
+            # return True
+            return False
         else:
             return False
 
@@ -412,7 +411,7 @@ class MongoEngine(EngineBase):
                                            "remove", "replaceOne", "renameCollection", "update", "updateOne",
                                            "updateMany", "renameCollection"]
                 pattern = re.compile(
-                    r'''^db\.createCollection\(([\s\S]*)\)$|^db\.([\w\.-]+)\.(?:[A-Za-z]+)(?:\([\s\S]*\)$)|^db\.getCollection\((?:\s*)(?:'|")([\w-]*)('|")(\s*)\)\.([A-Za-z]+)(\([\s\S]*\)$)''')
+                    r'''^db\.createCollection\(([\s\S]*)\)$|^db\.(\w+)\.(?:[A-Za-z]+)(?:\([\s\S]*\)$)|^db\.getCollection\((?:\s*)(?:'|")(\w*)('|")(\s*)\)\.([A-Za-z]+)(\([\s\S]*\)$)''')
                 m = pattern.match(check_sql)
                 if m is not None and (re.search(re.compile(r'}(?:\s*){'), check_sql) is None) and check_sql.count(
                         '{') == check_sql.count('}') and check_sql.count('(') == check_sql.count(')'):
@@ -439,9 +438,8 @@ class MongoEngine(EngineBase):
                                 check_result.rows += [result]
                                 continue
                         else:
-                            # method = sql_str.split('.')[2]
-                            # methodStr = method.split('(')[0].strip()
-                            methodStr = sql_str.split('(')[0].split('.')[-1].strip()    # 最后一个.和括号(之间的字符串作为方法
+                            method = sql_str.split('.')[2]
+                            methodStr = method.split('(')[0].strip()
                         if methodStr in is_exist_premise_method and not is_in:
                             check_result.error = "文档不存在"
                             check_result.error_count += 1
@@ -699,7 +697,6 @@ class MongoEngine(EngineBase):
 
     def query_check(self, db_name=None, sql=''):
         """提交查询前的检查"""
-
         sql = sql.strip()
         if sql.startswith("explain"):
             sql = sql[7:]+".explain()"
@@ -839,8 +836,6 @@ class MongoEngine(EngineBase):
             result = self.get_all_columns_by_tb(db_name=db_name, tb_name=tb_name)
             columns = result.rows
         columns.insert(0, "mongodballdata")  # 隐藏JSON结果列
-        columns = self.fill_query_columns(cursor, columns)
-
         for ro in cursor:
             json_col = json.dumps(ro, ensure_ascii=False, indent=2, separators=(",", ":"))
             row.insert(0, json_col)
@@ -867,13 +862,3 @@ class MongoEngine(EngineBase):
             rows.append(tuple(row))
             row.clear()
         return tuple(rows), columns
-
-    @staticmethod
-    def fill_query_columns(cursor, columns):
-        """补充结果集中`get_all_columns_by_tb`未获取的字段"""
-        cols = columns
-        for ro in cursor:
-            for key in ro.keys():
-                if key not in cols:
-                    cols.append(key)
-        return cols

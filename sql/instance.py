@@ -7,15 +7,15 @@ import time
 
 import simplejson as json
 from django.conf import settings
-from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.decorators import permission_required,login_required
 from django.http import HttpResponse
 from django.views.decorators.cache import cache_page
 
 from common.config import SysConfig
 from common.utils.extend_json_encoder import ExtendJSONEncoder
-from common.utils.convert import Convert
 from sql.engines import get_engine
 from sql.plugins.schemasync import SchemaSync
+from sql.utils.resource_group import user_instances
 from .models import Instance, ParamTemplate, ParamHistory
 
 
@@ -29,9 +29,8 @@ def lists(request):
     tags = request.POST.getlist('tags[]')
     limit = offset + limit
     search = request.POST.get('search', '')
-    sortName = str(request.POST.get('sortName'))
-    sortOrder = str(request.POST.get('sortOrder')).lower()
 
+    user = request.user
     # 组合筛选项
     filter_dict = dict()
     # 过滤搜索
@@ -44,23 +43,59 @@ def lists(request):
     if db_type:
         filter_dict['db_type'] = db_type
 
-    instances = Instance.objects.filter(**filter_dict)
+    if not user.is_superuser:
+        # 普通用户只能查看可读的mysql实例
+        instances = user_instances(user, None, ['mysql'], ['can_read'])
+        instances = instances.filter(**filter_dict)
+    else:
+        instances = Instance.objects.filter(**filter_dict)
+
     # 过滤标签，返回同时包含全部标签的实例，TODO 循环会生成多表JOIN，如果数据量大会存在效率问题
     if tags:
         for tag in tags:
             instances = instances.filter(instance_tag=tag, instance_tag__active=True)
 
     count = instances.count()
-    if sortName == 'instance_name':
-        instances = instances.order_by(getattr(Convert(sortName, 'gbk'), sortOrder)())[offset:limit]
-    else:
-        instances = instances.order_by('-' + sortName if sortOrder == 'desc' else sortName)[offset:limit]
-    instances = instances.values("id", "instance_name", "db_type", "type", "host", "port", "user")
-
+    instances = instances[offset:limit].values("id", "instance_name", "db_type", "type", "host", "port", "user")
     # QuerySet 序列化
     rows = [row for row in instances]
 
     result = {"total": count, "rows": rows}
+    return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
+                        content_type='application/json')
+
+
+#@permission_required('sql.menu_instance_list', raise_exception=True)
+@login_required
+def detail(request):
+    """获取实例详细信息"""
+    instance_id = int(request.GET.get('id',0))
+    user = request.user
+    result = {}
+    instance_info = None
+    if not user.is_superuser:
+        # 普通用户只能查看可读的mysql实例
+        instances = user_instances(user, None, ['mysql'], ['can_read'])
+        try:
+            instance_info = instances.get(id=instance_id)
+        except:
+            result = {'status': 2, 'msg': '用户权限不够', 'data': {}}
+
+    if not result:    
+        try:
+            if not instance_info:
+                instance_info = Instance.objects.get(id=instance_id)
+            data = {
+                'host':instance_info.host,
+                'instance_name':instance_info.instance_name,      
+                'password':instance_info.password, 
+                'port':instance_info.port,
+                'user':instance_info.user,
+            }
+            result = {'status': 0, 'data': data}
+        except Instance.DoesNotExist:
+            result = {'status': 1, 'msg': '实例不存在', 'data': {}}
+
     return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
                         content_type='application/json')
 
@@ -209,15 +244,15 @@ def schemasync(request):
         "sync-comments": sync_comments,
         "tag": tag,
         "output-directory": output_directory,
-        "source": r"mysql://{user}:'{pwd}'@{host}:{port}/{database}".format(user=shlex.quote(str(instance_info.user)),
-                                                                            pwd=shlex.quote(str(instance_info.password)),
-                                                                            host=shlex.quote(str(instance_info.host)),
-                                                                            port=shlex.quote(str(instance_info.port)),
+        "source": r"mysql://{user}:'{pwd}'@{host}:{port}/{database}".format(user=instance_info.user,
+                                                                            pwd=instance_info.password,
+                                                                            host=instance_info.host,
+                                                                            port=instance_info.port,
                                                                             database=db_name),
-        "target": r"mysql://{user}:'{pwd}'@{host}:{port}/{database}".format(user=shlex.quote(str(target_instance_info.user)),
-                                                                            pwd=shlex.quote(str(target_instance_info.password)),
-                                                                            host=shlex.quote(str(target_instance_info.host)),
-                                                                            port=shlex.quote(str(target_instance_info.port)),
+        "target": r"mysql://{user}:'{pwd}'@{host}:{port}/{database}".format(user=target_instance_info.user,
+                                                                            pwd=target_instance_info.password,
+                                                                            host=target_instance_info.host,
+                                                                            port=target_instance_info.port,
                                                                             database=target_db_name)
     }
     # 参数检查

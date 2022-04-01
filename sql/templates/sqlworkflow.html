@@ -228,6 +228,7 @@
                     field: 'is_backup',
                     visible: true, // 默认显示
                     formatter: function (value, row, index) {
+                        console.log(typeof(value),value);
                         if (String(value) === 'true') {
                             return '是'
                         } else {
@@ -323,7 +324,7 @@
                         }],
                         onLoadSuccess: function () {
                         },
-                        onLoadError: onLoadErrorCallback
+                        onLoadError: onLoadErrorCallback,
                     });
                 },
                 error: function (XMLHttpRequest, textStatus, errorThrown) {

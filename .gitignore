@@ -12,3 +12,10 @@ venv
 env
 sonar-project.properties
 .scannerwork
+src/plugins/
+nohup.out
+supervisord.pid
+downloads/
+*.patch
+/static/
+*.bak

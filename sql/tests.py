@@ -11,9 +11,9 @@ import sql.query_privileges
 from common.config import SysConfig
 from common.utils.const import WorkflowDict
 from sql.archiver import add_archive_task, archive
-from sql.binlog import binlog2sql_file, my2sql_file
+from sql.binlog import binlog2sql_file
 from sql.engines.models import ResultSet, ReviewSet, ReviewResult
-from sql.notify import notify_for_audit, notify_for_execute, notify_for_binlog2sql, notify_for_my2sql
+from sql.notify import notify_for_audit, notify_for_execute, notify_for_binlog2sql
 from sql.utils.execute_sql import execute_callback
 from sql.query import kill_query_conn
 from sql.models import Users, Instance, QueryPrivilegesApply, QueryPrivileges, SqlWorkflow, SqlWorkflowContent, \
@@ -191,12 +191,6 @@ class TestView(TestCase):
         """测试binlog2sql页面"""
         data = {}
         r = self.client.get(f'/binlog2sql/', data=data)
-        self.assertEqual(r.status_code, 200)
-
-    def test_my2sql(self):
-        """测试my2sql页面"""
-        data = {}
-        r = self.client.get(f'/my2sql/', data=data)
         self.assertEqual(r.status_code, 200)
 
     def test_schemasync(self):
@@ -941,6 +935,7 @@ class TestQuery(TransactionTestCase):
         _get_engine.return_value.query.assert_called_once_with(
             some_db, some_sql, some_limit, schema_name=None, tb_name=None, max_execution_time=60000)
         r_json = r.json()
+        print(r_json)
         self.assertEqual(r_json['data']['rows'], ['value'])
         self.assertEqual(r_json['data']['column_list'], ['some'])
         self.assertEqual(r_json['data']['seconds_behind_master'], 100)
@@ -2064,6 +2059,7 @@ class TestBinLog(TestCase):
             "instance_name": 'test_instance'
         }
         r = self.client.post(path='/binlog/list/', data=data)
+        print(json.loads(r.content))
         # self.assertEqual(json.loads(r.content).get('status'), 1)
 
     def test_binlog2sql_path_not_exist(self):
@@ -2087,32 +2083,6 @@ class TestBinLog(TestCase):
                 "only_dml": "true",
                 "sql_type": ""}
         r = self.client.post(path='/binlog/binlog2sql/', data=data)
-        self.assertEqual(json.loads(r.content), {'status': 1, 'msg': '可执行文件路径不能为空！', 'data': {}})
-
-    def test_my2sql_path_not_exist(self):
-        """
-        测试获取解析binlog，path未设置
-        :return:
-        """
-        data = {"instance_name": "test_instance",
-                "save_sql": "false",
-                "rollback": "2sql",
-                "num": "",
-                "threads": 1,
-                "extra_info": "false",
-                "ignore_primary_key": "false",
-                "full_columns": "false",
-                "no_db_prefix": "false",
-                "file_per_table": "false",
-                "start_file": "mysql-bin.000045",
-                "start_pos": "",
-                "end_file": "mysql-bin.000045",
-                "end_pos": "",
-                "stop_time": "",
-                "start_time": "",
-                "only_schemas": "",
-                "sql_type": ""}
-        r = self.client.post(path='/binlog/my2sql/', data=data)
         self.assertEqual(json.loads(r.content), {'status': 1, 'msg': '可执行文件路径不能为空！', 'data': {}})
 
     @patch('sql.plugins.plugin.subprocess')
@@ -2142,36 +2112,6 @@ class TestBinLog(TestCase):
         r = self.client.post(path='/binlog/binlog2sql/', data=data)
         self.assertEqual(json.loads(r.content), {"status": 0, "msg": "ok", "data": [{"sql": {}, "binlog_info": {}}]})
 
-    @patch('sql.plugins.plugin.subprocess')
-    def test_my2sql(self, _subprocess):
-        """
-        测试获取解析binlog，path设置
-        :param _subprocess:
-        :return:
-        """
-        self.sys_config.set('my2sql', '/opt/my2sql')
-        self.sys_config.get_all_config()
-        data = {"instance_name": "test_instance",
-                "save_sql": "1",
-                "rollback": "2sql",
-                "num": "1",
-                "threads": 1,
-                "extra_info": "false",
-                "ignore_primary_key": "false",
-                "full_columns": "false",
-                "no_db_prefix": "false",
-                "file_per_table": "false",
-                "start_file": "mysql-bin.000045",
-                "start_pos": "",
-                "end_file": "mysql-bin.000046",
-                "end_pos": "",
-                "stop_time": "",
-                "start_time": "",
-                "only_schemas": "",
-                "sql_type": ""}
-        r = self.client.post(path='/binlog/my2sql/', data=data)
-        self.assertEqual(json.loads(r.content), {"status": 0, "msg": "ok", "data": []})
-
     @patch('builtins.open')
     def test_binlog2sql_file(self, _open):
         """
@@ -2196,35 +2136,6 @@ class TestBinLog(TestCase):
                 "sql_type": "",
                 "instance": self.master}
         r = binlog2sql_file(args=args, user=self.superuser)
-        self.assertEqual(self.superuser, r[0])
-
-    @patch('builtins.open')
-    def test_my2sql_file(self, _open):
-        """
-        测试保存文件
-        :param _subprocess:
-        :return:
-        """
-        args = {"instance_name": "test_instance",
-                "save_sql": "1",
-                "rollback": "2sql",
-                "num": "1",
-                "threads": 1,
-                "add-extraInfo": "false",
-                "ignore-primaryKey-forInsert": "false",
-                "full-columns": "false",
-                "do-not-add-prifixDb": "false",
-                "file-per-table": "false",
-                "start-file": "mysql-bin.000045",
-                "start-pos": "",
-                "stop-file": "mysql-bin.000045",
-                "stop-pos": "",
-                "stop-datetime": "",
-                "start-datetime": "",
-                "databases": "",
-                "sql": "",
-                "instance": self.master}
-        r = my2sql_file(args=args, user=self.superuser)
         self.assertEqual(self.superuser, r[0])
 
     def test_del_binlog_instance_not_exist(self):
@@ -2701,18 +2612,6 @@ class TestNotify(TestCase):
         r = notify_for_execute(self.wf)
         self.assertIsNone(r)
 
-    @patch('sql.notify.MsgSender')
-    def test_notify_for_my2sql_disable(self, _msg_sender):
-        """
-        测试执行消息关闭
-        :return:
-        """
-        # 开启消息通知
-        self.sys_config.set('mail', 'false')
-        self.sys_config.set('ding', 'false')
-        r = notify_for_execute(self.wf)
-        self.assertIsNone(r)
-
     @patch('django_q.tasks.async_task')
     @patch('sql.notify.MsgSender')
     def test_notify_for_binlog2sql(self, _msg_sender, _async_task):
@@ -2725,21 +2624,6 @@ class TestNotify(TestCase):
         # 设置为task成功
         _async_task.return_value.success.return_value = True
         r = notify_for_binlog2sql(_async_task)
-        self.assertIsNone(r)
-        _msg_sender.assert_called_once()
-
-    @patch('django_q.tasks.async_task')
-    @patch('sql.notify.MsgSender')
-    def test_notify_for_my2sql(self, _msg_sender, _async_task):
-        """
-        测试执行消息
-        :return:
-        """
-        # 开启消息通知
-        self.sys_config.set('mail', 'true')
-        # 设置为task成功
-        _async_task.return_value.success.return_value = True
-        r = notify_for_my2sql(_async_task)
         self.assertIsNone(r)
         _msg_sender.assert_called_once()
 
@@ -2782,11 +2666,10 @@ class TestDataDictionary(TestCase):
         测试获取表清单
         :return:
         """
-        _get_engine.return_value.get_group_tables_by_db.return_value = {'t': [['test1', '测试表1'], ['test2', '测试表2']]}
+        _get_engine.return_value.query.return_value = ResultSet(rows=(('test1', '测试表1'), ('test2', '测试表2')))
         data = {
             'instance_name': self.ins.instance_name,
-            'db_name': self.db_name,
-            'db_type': 'mysql'
+            'db_name': self.db_name
         }
         r = self.client.get(path='/data_dictionary/table_list/', data=data)
         self.assertEqual(r.status_code, 200)
@@ -2800,7 +2683,6 @@ class TestDataDictionary(TestCase):
         """
         data = {
             'instance_name': 'not exist ins',
-            'db_type': 'mysql'
         }
         r = self.client.get(path='/data_dictionary/table_list/', data=data)
         self.assertEqual(r.status_code, 200)
@@ -2813,8 +2695,7 @@ class TestDataDictionary(TestCase):
         """
         data = {
             'instance_name': 'not exist ins',
-            'db_name': self.db_name,
-            'db_type': 'mysql'
+            'db_name': self.db_name
         }
         r = self.client.get(path='/data_dictionary/table_list/', data=data)
         self.assertEqual(r.status_code, 200)
@@ -2829,8 +2710,7 @@ class TestDataDictionary(TestCase):
         _get_engine.side_effect = RuntimeError('test error')
         data = {
             'instance_name': self.ins.instance_name,
-            'db_name': self.db_name,
-            'db_type': 'mysql'
+            'db_name': self.db_name
         }
         r = self.client.get(path='/data_dictionary/table_list/', data=data)
         self.assertEqual(r.status_code, 200)
@@ -2846,8 +2726,7 @@ class TestDataDictionary(TestCase):
         data = {
             'instance_name': self.ins.instance_name,
             'db_name': self.db_name,
-            'tb_name': 'sql_instance',
-            'db_type': 'mysql'
+            'tb_name': 'sql_instance'
         }
         r = self.client.get(path='/data_dictionary/table_info/', data=data)
         self.assertEqual(r.status_code, 200)
@@ -2873,8 +2752,7 @@ class TestDataDictionary(TestCase):
         data = {
             'instance_name': 'not exist ins',
             'db_name': self.db_name,
-            'tb_name': 'sql_instance',
-            'db_type': 'mysql'
+            'tb_name': 'sql_instance'
         }
         r = self.client.get(path='/data_dictionary/table_info/', data=data)
         self.assertEqual(r.status_code, 200)
@@ -2890,8 +2768,7 @@ class TestDataDictionary(TestCase):
         data = {
             'instance_name': self.ins.instance_name,
             'db_name': self.db_name,
-            'tb_name': 'sql_instance',
-            'db_type': 'mysql'
+            'tb_name': 'sql_instance'
         }
         r = self.client.get(path='/data_dictionary/table_info/', data=data)
         self.assertEqual(r.status_code, 200)
@@ -2904,8 +2781,7 @@ class TestDataDictionary(TestCase):
         """
         data = {
             'instance_name': 'not_exist',
-            'db_name': self.db_name,
-            'db_type': 'mysql'
+            'db_name': self.db_name
         }
         r = self.client.get(path='/data_dictionary/export/', data=data)
         self.assertDictEqual(json.loads(r.content), {'data': [], 'msg': '你所在组未关联该实例！', 'status': 1})
@@ -2922,9 +2798,7 @@ class TestDataDictionary(TestCase):
         self.u1.user_permissions.add(data_dictionary_export)
         _user_instances.return_value.get.return_value = self.ins
         data = {
-            'instance_name': self.ins.instance_name,
-            'db_type': 'mysql'
-
+            'instance_name': self.ins.instance_name
         }
         r = self.client.get(path='/data_dictionary/export/', data=data)
         self.assertDictEqual(json.loads(r.content),
@@ -2952,34 +2826,9 @@ class TestDataDictionary(TestCase):
              'TABLE_COLLATION': 'utf8_general_ci', 'CHECKSUM': None, 'CREATE_OPTIONS': '', 'TABLE_COMMENT': ''}))
         data = {
             'instance_name': self.ins.instance_name,
-            'db_name': self.db_name,
-            'db_type': 'mysql'
+            'db_name': self.db_name
         }
         r = self.client.get(path='/data_dictionary/export/', data=data)
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.streaming)
-
-
-    @patch('sql.data_dictionary.get_engine')
-    def oracle_test_export_db(self, _get_engine):
-        """
-        oracle测试导出
-        :return:
-        """
-        _get_engine.return_value.get_all_databases.return_value.rows.return_value = ResultSet(
-            rows=(('test1',), ('test2',)))
-        _get_engine.return_value.query.return_value = ResultSet(rows=(
-            { 'TABLE_NAME': 'aliyun_rds_config', 'TABLE_COMMENTS': 'TABLE',  'COLUMN_NAME':'t1', 'data_type': 'varcher2(20)', 'DATA_DEFAULT': 'Dynamic', 'NULLABLE': 'Y', 'INDEX_NAME': 'SYS_01', 'COMMENTS': 'SYS_01'
-             },
-            { 'TABLE_NAME': 'auth_group', 'TABLE_COMMENTS': 'TABLE', 'COLUMN_NAME': 't1', 'data_type': 'varcher2(20)', 'DATA_DEFAULT': 'Dynamic', 'NULLABLE': 'N', 'INDEX_NAME': 'SYS_01','COMMENTS': 'SYS_01'
-            }))
-        data = {
-            'instance_name': self.ins.instance_name,
-            'db_name': self.db_name,
-            'db_type': 'oracle'
-        }
-        r = self.client.get(path='/data_dictionary/export/', data=data)
-        print("oracle_test_export_db" )
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.streaming)
 
@@ -3004,36 +2853,9 @@ class TestDataDictionary(TestCase):
              'CREATE_TIME': datetime(2019, 5, 28, 9, 4, 11), 'UPDATE_TIME': None, 'CHECK_TIME': None,
              'TABLE_COLLATION': 'utf8_general_ci', 'CHECKSUM': None, 'CREATE_OPTIONS': '', 'TABLE_COMMENT': ''}))
         data = {
-            'instance_name': self.ins.instance_name,
-            'db_type':'mysql'
+            'instance_name': self.ins.instance_name
         }
         r = self.client.get(path='/data_dictionary/export/', data=data)
         self.assertEqual(r.status_code, 200)
         self.assertDictEqual(json.loads(r.content),
                              {'data': [], 'msg': '实例test_instance数据字典导出成功，请到downloads目录下载！', 'status': 0})
-
-    @patch('sql.data_dictionary.get_engine')
-    def oracle_test_export_instance(self, _get_engine):
-        """
-        oracle元数据测试导出
-        :return:
-        """
-        _get_engine.return_value.get_all_databases.return_value.rows.return_value = ResultSet(
-            rows=(('test1',), ('test2',)))
-        _get_engine.return_value.query.return_value = ResultSet(rows=(
-            { 'TABLE_NAME': 'aliyun_rds_config', 'TABLE_COMMENTS': 'TABLE',  'COLUMN_NAME':'t1', 'data_type': 'varcher2(20)', 'DATA_DEFAULT': 'Dynamic', 'NULLABLE': 'Y', 'INDEX_NAME': 'SYS_01', 'COMMENTS': 'SYS_01'
-             },
-            { 'TABLE_NAME': 'auth_group', 'TABLE_COMMENTS': 'TABLE', 'COLUMN_NAME': 't1', 'data_type': 'varcher2(20)', 'DATA_DEFAULT': 'Dynamic', 'NULLABLE': 'N', 'INDEX_NAME': 'SYS_01','COMMENTS': 'SYS_01'
-            }))
-        data = {
-            'instance_name': self.ins.instance_name,
-            'db_type':'oracle'
-        }
-        r = self.client.get(path='/data_dictionary/export/', data=data)
-
-        print(r.status_code)
-        print("oracle_test_export_instance" )
-        self.assertEqual(r.status_code, 200)
-        self.assertDictEqual(json.loads(r.content),
-                             {'data': [], 'msg': '实例test_instance数据字典导出成功，请到downloads目录下载！', 'status': 0})
-

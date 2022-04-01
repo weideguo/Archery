@@ -11,8 +11,6 @@ from .models import Users, Instance, SqlWorkflow, SqlWorkflowContent, QueryLog, 
     WorkflowAudit, WorkflowLog, ParamTemplate, ParamHistory, InstanceTag, \
     Tunnel, AuditEntry
 
-from sql.form import TunnelForm, InstanceForm
-
 
 # 用户管理
 @admin.register(Users)
@@ -62,7 +60,6 @@ class InstanceTagAdmin(admin.ModelAdmin):
 # 实例管理
 @admin.register(Instance)
 class InstanceAdmin(admin.ModelAdmin):
-    form = InstanceForm
     list_display = ('id', 'instance_name', 'db_type', 'type', 'host', 'port', 'user', 'create_time')
     search_fields = ['instance_name', 'host', 'port', 'user']
     list_filter = ('db_type', 'type', 'instance_tag')
@@ -90,14 +87,13 @@ class TunnelAdmin(admin.ModelAdmin):
     search_fields = ('id', 'tunnel_name')
     fieldsets = (
                     None,
-                    {'fields': ('tunnel_name', 'host', 'port', 'user', 'password', 'pkey_path', 'pkey_password', 'pkey'), }),
+                    {'fields': ('tunnel_name', 'host', 'port', 'user', 'password', 'pkey_path', 'pkey_password',), }),
     ordering = ('id',)
     # 添加页显示内容
     add_fieldsets = (
         ('隧道信息', {'fields': ('tunnel_name', 'host', 'port')}),
-        ('连接信息', {'fields': ('user', 'password', 'pkey_path', 'pkey_password', 'pkey')}),
+        ('连接信息', {'fields': ('user', 'password', 'pkey_path', 'pkey_password')}),
     )
-    form = TunnelForm
 
     def formfield_for_dbfield(self, db_field, **kwargs):
         if db_field.name in ['password', 'pkey_password']:
@@ -155,7 +151,7 @@ class QueryPrivilegesApplyAdmin(admin.ModelAdmin):
 @admin.register(DataMaskingColumns)
 class DataMaskingColumnsAdmin(admin.ModelAdmin):
     list_display = (
-        'column_id', 'rule_type', 'active', 'instance', 'table_schema', 'table_name', 'column_name', 'column_comment',
+        'column_id', 'rule_type', 'active', 'instance', 'table_schema', 'table_name', 'column_name',
         'create_time',)
     search_fields = ['table_name', 'column_name']
     list_filter = ('rule_type', 'active', 'instance__instance_name')

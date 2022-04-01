@@ -1,165 +1,62 @@
-<div align="center">
+archery的修改版本
 
-# <a href="https://archerydms.com/" target="_blank" rel="noopener noreferrer">Archery</a>
-
-[![star](https://gitee.com/rtttte/Archery/badge/star.svg?theme=gvp)](https://gitee.com/rtttte/Archery)
-[![Django CI](https://github.com/hhyo/Archery/actions/workflows/django.yml/badge.svg)](https://github.com/hhyo/Archery/actions/workflows/django.yml)
-[![Release](https://img.shields.io/github/release/hhyo/archery.svg)](https://github.com/hhyo/archery/releases/)
-[![codecov](https://codecov.io/gh/hhyo/archery/branch/master/graph/badge.svg)](https://codecov.io/gh/hhyo/archery)
-[![version](https://img.shields.io/pypi/pyversions/django)](https://img.shields.io/pypi/pyversions/django/)
-[![version](https://img.shields.io/badge/django-3.1-brightgreen.svg)](https://docs.djangoproject.com/zh-hans/3.1/)
-[![Publish Docker image](https://github.com/hhyo/Archery/actions/workflows/docker-image.yml/badge.svg)](https://github.com/hhyo/Archery/actions/workflows/docker-image.yml)
-[![docker_pulls](https://img.shields.io/docker/pulls/hhyo/archery.svg)](https://hub.docker.com/r/hhyo/archery/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](http://github.com/hhyo/archery/blob/master/LICENSE)
-[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
-
-[文档](https://archerydms.com/) | [FAQ](https://github.com/hhyo/archery/wiki/FAQ) | [Releases](https://github.com/hhyo/archery/releases/)
-
-![](https://images.gitee.com/uploads/images/2019/1110/202317_32bd4a1c_1038040.png)
-
-</div>
+这是2021.06-2022.03在某公司的分支版本，相对与主版本，多了pma登陆，企业微信通知时多了操作人信息，对查询可以设置限制的主机。
 
 
-介绍
-============
-Archery是[archer](https://github.com/jly8866/archer)的分支项目，定位于SQL审核查询平台，旨在提升DBA的工作效率，支持多数据库的SQL上线和查询，同时支持丰富的MySQL运维功能，所有功能都兼容手机端操作
+发布
+------------
+构建基础镜像
+``` shell
+# 构建基础镜像 因为这两个很少改变，所以可以预先构建，如果python中引入新模块，则重新构建
+## 启动容器 手动安装依赖项 
+docker run -it archery-base:1.3 /bin/bash
 
-功能清单
-====
+## 复制文件到容器
+docker cp requirements.txt <container-id>:/etc
 
-|  | 查询 | 审核 | 执行 | 备份 | 数据字典 | 慢日志 | 会话管理 | 账号管理 | 参数管理 | 数据归档 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| MySQL | √ | √ | √ | √ | √ | √ | √ | √ | √ | √ |
-| MsSQL | √ | × | √ | × | √ | × | × | × | × | × |
-| Redis | √ | × | √ | × | × | × | × | × | × | × |
-| PgSQL | √ | × | √ | × | × | × | × | × | × | × |
-| Oracle | √ | √ | √ | √ | √ | × | × | × | × | × |
-| MongoDB | √ | √  | √  | × | × | × | × | × | × | × |
-| Phoenix | √ | ×  | √  | × | × | × | × | × | × | × |
-| ODPS | √ | ×  | ×  | × | × | × | × | × | × | × |
-| ClickHouse | √ | √  | √  | × | × | × | × | × | × | × |
-
-  
-
-快速开始
-===============
-### 系统体验
-[在线体验](https://demo.archerydms.com)
-  
-| 账号 | 密码 |
-| --- | --- |
-| archer | archer |
-
-### Docker
-#### 准备运行配置
-具体可参考：https://github.com/hhyo/Archery/tree/master/src/docker-compose    
-
-#### 启动
-下载 [Releases](https://github.com/hhyo/archery/releases/)文件，解压后进入docker-compose文件夹
-
-```bash
-#启动
-docker-compose -f docker-compose.yml up -d
-
-#表结构初始化
-docker exec -ti archery /bin/bash
-cd /opt/archery
+## 进入容器运行
 source /opt/venv4archery/bin/activate
-python3 manage.py makemigrations sql  
-python3 manage.py migrate
+yum -y install nginx 
+pip3 install -r /etc/requirements.txt 
 
-#数据初始化
-python3 manage.py dbshell<sql/fixtures/auth_group.sql
-python3 manage.py dbshell<src/init_sql/mysql_slow_query_review.sql
-
-#创建管理用户
-python3 manage.py createsuperuser
-
-#重启服务
-docker restart archery
-
-#日志查看和问题排查
-docker logs archery -f --tail=10
-logs/archery.log
+## 提交容器成基础镜像
+docker commit <container-id> archery-base:1.3
 ```
 
-#### 访问
-http://127.0.0.1:9123/
+发布
+``` shell
+## 手动构建新镜像 一般不需要手动构建镜像
+#docker build -t archery_new:a.b.c -f Dockerfile .
 
-手动安装
-===============
-[部署说明](https://github.com/hhyo/archery/wiki/manual)
-
-运行测试
-===============
-```
-python manage.py test -v 3
+## 使用docker-compose.yml构建镜像并启动容器 重新构建需要修改 compose文件： 服务名 对外映射端口号 .env文件
+# docker-compose -f docker-compose.yml build    # 使用自定义配置文件构建镜像
+# docker-compose -f docker-compose.yml up -d    # 使用自定义配置文件运行容器，果如没有镜像则先构建
+docker-compose up -d
 ```
 
-依赖清单
-===============
-### 框架
-- [Django](https://github.com/django/django)
-- [Bootstrap](https://github.com/twbs/bootstrap)
-- [jQuery](https://github.com/jquery/jquery)
-### 前端组件
-- 菜单栏 [metisMenu](https://github.com/onokumus/metismenu)
-- 主题 [sb-admin-2](https://github.com/BlackrockDigital/startbootstrap-sb-admin-2)
-- 编辑器 [ace](https://github.com/ajaxorg/ace)
-- SQL美化 [sql-formatter](https://github.com/zeroturnaround/sql-formatter)
-- 表格  [bootstrap-table](https://github.com/wenzhixin/bootstrap-table)
-- 表格编辑  [bootstrap-editable](https://github.com/vitalets/x-editable)
-- 下拉菜单 [bootstrap-select](https://github.com/snapappointments/bootstrap-select)
-- 文件上传 [bootstrap-fileinput](https://github.com/kartik-v/bootstrap-fileinput)
-- 时间选择  [bootstrap-datetimepicker](https://github.com/smalot/bootstrap-datetimepicker)
-- 日期选择  [daterangepicker](https://github.com/dangrossman/daterangepicker)
-- 开关  [bootstrap-switch](https://github.com/Bttstrp/bootstrap-switch)
-- Markdown展示  [marked](https://github.com/markedjs/marked)
-### 服务端
-- 队列任务 [django-q](https://github.com/Koed00/django-q)
-- MySQL Connector [mysqlclient-python](https://github.com/PyMySQL/mysqlclient-python)
-- MsSQL Connector [pyodbc](https://github.com/mkleehammer/pyodbc)
-- Redis Connector [redis-py](https://github.com/andymccurdy/redis-py)
-- PostgreSQL Connector [psycopg2](https://github.com/psycopg/psycopg2)
-- Oracle Connector [cx_Oracle](https://github.com/oracle/python-cx_Oracle)
-- MongoDB Connector [pymongo](https://github.com/mongodb/mongo-python-driver)
-- Phoenix Connector [phoenixdb](https://github.com/lalinsky/python-phoenixdb)
-- ODPS Connector [pyodps](https://github.com/aliyun/aliyun-odps-python-sdk)
-- ClickHouse Connector [clickhouse-driver](https://github.com/mymarilyn/clickhouse-driver)
-- SQL解析/切分/类型判断 [sqlparse](https://github.com/andialbrecht/sqlparse)
-- MySQL Binlog解析/回滚 [python-mysql-replication](https://github.com/noplay/python-mysql-replication)
-- LDAP [django-auth-ldap](https://github.com/django-auth-ldap/django-auth-ldap)
-- 序列化 [simplejson](https://github.com/simplejson/simplejson)
-- 时间处理 [python-dateutil](https://github.com/paxan/python-dateutil)
-### 功能依赖
-- 可视化 [pyecharts](https://github.com/pyecharts/pyecharts)
-- MySQL审核/执行/备份 [goInception](https://github.com/hanchuanchuan/goInception)|[inception](https://github.com/hhyo/inception)
-- MySQL索引优化 [SQLAdvisor](https://github.com/Meituan-Dianping/SQLAdvisor)
-- SQL优化/压缩 [SOAR](https://github.com/XiaoMi/soar)
-- Binlog2SQL [binlog2sql](https://github.com/danfengcao/binlog2sql)
-- My2SQL [my2sql](https://github.com/liuhr/my2sql)
-- 表结构同步 [SchemaSync](https://github.com/hhyo/SchemaSync)
-- 慢日志解析展示 [pt-query-digest](https://www.percona.com/doc/percona-toolkit/3.0/pt-query-digest.html)|[aquila_v2](https://github.com/thinkdb/aquila_v2)
-- 大表DDL [gh-ost](https://github.com/github/gh-ost)|[pt-online-schema-change](https://www.percona.com/doc/percona-toolkit/3.0/pt-online-schema-change.html)
-- MyBatis XML解析 [mybatis-mapper2sql](https://github.com/hhyo/mybatis-mapper2sql)
-- RDS管理 [aliyun-openapi-python-sdk](https://github.com/aliyun/aliyun-openapi-python-sdk)
-- 数据加密 [django-mirage-field](https://github.com/luojilab/django-mirage-field)
 
 
-贡献代码
-===============
-可查阅主页的开发计划以及依赖清单，在对应issues中回复认领，或者直接提交PR，感谢你对Archery的贡献  
-贡献包括但不限于以下方式：
-- Wiki文档（开放编辑）
-- Bug修复
-- 新功能提交
-- 代码优化
-- 测试用例完善
+调试启动
+---------------
+``` shell
+# 启动容器
+docker run -it -v $PWD:/opt/archery -p 9124:9123 --env NGINX_PORT=9123 --network docker-compose_default archery-base:1.3 /bin/bash
 
-问题反馈
-===============
-[Issues](https://github.com/hhyo/archery/issues)是本项目唯一的沟通渠道，如果在使用过程中遇到问题，请先查阅文档，如果仍无法解决，请查看相关日志，保存截图信息，给我们提交[Issue](https://github.com/hhyo/archery/issues)，请按照模板提供相关信息，否则会被直接关闭，感谢理解
+# 进入容器然后运行
+cd /opt/archery
+ 
+cp /opt/archery/src/docker/nginx.conf /etc/nginx/ \
+&& cp /opt/archery/src/docker/supervisord.conf /etc/ 
 
+/usr/sbin/nginx
 
+source /opt/venv4archery/bin/activate
 
+python3 manage.py collectstatic -v0 --noinput
 
+# 启动django_q 可能不需要单独启动，如果共用redis，则django_q多个竞争执行，启动多个也没有影响
+supervisord -c /etc/supervisord.conf
+
+nohup python3 manage.py runserver 127.0.0.1:8888 &
+
+```

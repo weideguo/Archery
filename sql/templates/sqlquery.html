@@ -78,8 +78,6 @@
                                     <optgroup id="optgroup-oracle" label="Oracle"></optgroup>
                                     <optgroup id="optgroup-mongo" label="Mongo"></optgroup>
                                     <optgroup id="optgroup-phoenix" label="Phoenix"></optgroup>
-                                    <optgroup id="optgroup-odps" label="ODPS"></optgroup>
-                                    <optgroup id="optgroup-clickhouse" label="ClickHouse"></optgroup>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -266,7 +264,7 @@
     <script>
         //获取查询列表
         function get_querylog(query_log_id) {
-            var showExport = {{can_download}}===1
+            showExport = {{can_download}}===1
             //初始化table
             $('#sql-log').bootstrapTable('destroy').bootstrapTable({
                 escape: true,
@@ -281,7 +279,7 @@
                 sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
                 pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
                 pageSize: 14,                       //每页的记录行数（*）
-                pageList: [10, 30, 50, 100],        //可供选择的每页的行数（*）
+                pageList: [10, 30, 50, 100, 500, 1000],   //可供选择的每页的行数（*）
                 showExport: showExport,                   //是否显示导出按钮
                 exportTypes: ['json', 'sql', 'csv', 'txt', 'xml', 'xlsx'],
                 exportOptions: {
@@ -362,9 +360,8 @@
                     title: '语句',
                     field: 'sqllog',
                     formatter: function (value, row, index) {
-                        var _sql=row.sqllog
-                        if (_sql.length > 50) {
-                            var sql = _sql.substr(0, 50) + '...';
+                        if (value.length > 50) {
+                            var sql = value.substr(0, 50) + '...';
                             return sql;
                         } else {
                             return value
@@ -572,7 +569,6 @@
 
             //激活添加的tab
             $("#nav-tabs a:last").tab('show')
-
         }
 
         //删除执行结果页面
@@ -624,7 +620,11 @@
 
         //先做表单验证，验证成功再成功提交查询请求
         $("#btn-sqlquery").click(function () {
-                dosqlquery();
+                if (sqlquery_validate()) {
+                    $('input[type=button]').addClass('disabled');
+                    $('input[type=button]').prop('disabled', true);
+                    sqlquery();
+                }
             }
         );
 
@@ -713,7 +713,6 @@
                     $("#execute_result_tab"+n+" p").remove(); 
                 }
                 $("#execute_result_tab"+n).append("<p style=\"display:none\">"+query_str+"</p>");
-
                 //显示查询结果
                 if (result['column_list']) {
                     //异步获取要动态生成的列
@@ -783,7 +782,7 @@
                         if (optgroup === 'Mongo' || optgroup === 'Redis') {
                             isdetail = true
                         }
-                        var showExport = {{can_download}}===1
+                        showExport = {{can_download}}===1
                         $("#" + ('query_result' + n)).bootstrapTable('destroy').bootstrapTable({
                             escape: true,
                             data: result['rows'],
@@ -897,6 +896,7 @@
             }
         }
 
+        
         //将数据通过ajax提交给后端进行检查
         function sqlquery(sql) {
             var optgroup = $('#instance_name :selected').parent().attr('label');
@@ -930,11 +930,6 @@
                 if (sql === 'explain') {
                     sqlContent = 'explain ' + sqlContent
                 }
-            } else if (optgroup === "ClickHouse") {
-                //查看执行计划
-                if (sql === 'explain') {
-                    sqlContent = 'explain ' + sqlContent
-                }
             }
             //提交请求
             $.ajax({
@@ -962,14 +957,6 @@
                     alert(errorThrown);
                 }
             });
-        }
-
-        function dosqlquery() {
-            if (sqlquery_validate()) {
-                $('input[type=button]').addClass('disabled');
-                $('input[type=button]').prop('disabled', true);
-                sqlquery();
-            }
         }
     </script>
     <!-- common -->
@@ -1033,14 +1020,6 @@
                 }
                 $("#btn-format").attr('disabled', false);
                 $("#btn-explain").attr('disabled', true);
-            } else if (optgroup === "ClickHouse") {
-                if (change) {
-                    $("#div-table_name").show();
-                    $("#div-schema_name").hide();
-                    redis_help_tab_remove();
-                }
-                $("#btn-format").attr('disabled', false);
-                $("#btn-explain").attr('disabled', false);
             }
         }
 
@@ -1288,8 +1267,6 @@
                             $("#optgroup-pgsql").empty();
                             $("#optgroup-mongo").empty();
                             $("#optgroup-phoenix").empty();
-                            $("#optgroup-odps").empty();
-                            $("#optgroup-clickhouse").empty();
                             for (let i = 0; i < result.length; i++) {
                                 let instance = "<option value=\"" + result[i]['instance_name'] + "\">" + result[i]['instance_name'] + "</option>";
                                 if (result[i]['db_type'] === 'mysql') {
@@ -1306,10 +1283,6 @@
                                     $("#optgroup-mongo").append(instance);
                                 } else if (result[i]['db_type'] === 'phoenix') {
                                     $("#optgroup-phoenix").append(instance);
-                                } else if (result[i]['db_type'] === 'odps') {
-                                    $("#optgroup-odps").append(instance);
-                                } else if (result[i]['db_type'] === 'clickhouse') {
-                                    $("#optgroup-clickhouse").append(instance);
                                 }
                             }
                             $('#instance_name').selectpicker('render');

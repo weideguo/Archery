@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from common.config import SysConfig
 from common.utils.extend_json_encoder import ExtendJSONEncoder, ExtendJSONEncoderFTime
 from common.utils.timer import FuncTimer
+from common.utils.decorator import opt_limit_host_check
 from sql.query_privileges import query_priv_check
 from sql.utils.resource_group import user_instances
 from sql.utils.tasks import add_kill_conn_schedule, del_schedule
@@ -22,6 +23,7 @@ from sql.engines import get_engine
 logger = logging.getLogger('default')
 
 
+@opt_limit_host_check(allow_hosts_parameter='query_allow_hosts')
 @permission_required('sql.query_submit', raise_exception=True)
 def query(request):
     """
@@ -50,6 +52,16 @@ def query(request):
         result['status'] = 1
         result['msg'] = '页面提交参数可能为空'
         return HttpResponse(json.dumps(result), content_type='application/json')
+
+    ## 禁止非超级用户查看mysql.user表
+    #if not user.is_superuser:
+    #    
+    #    if re.match('.*\\s(mysql|`mysql`)(\\s)*\\.(\\s)*(user|`user`)((\\s)*|;).*',sql_content.lower().replace('\n','')) or\
+    #       (db_name=="mysql" and  re.match('.*(user|`user`)((\\s)*|;).*',sql_content.lower().replace('\n',''))):
+    #       
+    #        result['status'] = 1
+    #        result['msg'] = '您无权查看该表'
+    #        return HttpResponse(json.dumps(result), content_type='application/json')
 
     try:
         config = SysConfig()
@@ -172,7 +184,7 @@ def query(request):
         return HttpResponse(json.dumps(result), content_type='application/json')
     # 返回查询结果
     try:
-        return HttpResponse(json.dumps(result, use_decimal=False, cls=ExtendJSONEncoderFTime, bigint_as_string=True),
+        return HttpResponse(json.dumps(result, cls=ExtendJSONEncoderFTime, bigint_as_string=True),
                             content_type='application/json')
     # 虽然能正常返回，但是依然会乱码
     except UnicodeDecodeError:
@@ -215,11 +227,10 @@ def _querylog(request):
     # 语句别名
     if query_log_id:
         filter_dict['id'] = query_log_id
-
     # 管理员、审计员查看全部数据,普通用户查看自己的数据
     if not (user.is_superuser or user.has_perm('sql.audit_user')):
         filter_dict['username'] = user.username
- 
+
     if start_date and end_date:
         end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d') + datetime.timedelta(days=1)
         filter_dict['create_time__range'] = (start_date, end_date)

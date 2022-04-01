@@ -129,10 +129,7 @@ def instance(request):
     try:
         engine = get_engine(instance=instance)
         engine.get_connection()
-        dbs = engine.get_all_databases()
-        if dbs.error:
-            result['status'] = 1
-            result['msg'] = '无法连接实例,\n{}'.format(dbs.error)
+        engine.get_all_databases()
     except Exception as e:
         result['status'] = 1
         result['msg'] = '无法连接实例,\n{}'.format(str(e))

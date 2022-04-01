@@ -199,11 +199,12 @@ class MsgSender(object):
             # 防止如 [xxx](http://www.a.com)\n 的字符串被再次替换
             if url.strip()[-1] != ")":
                 msg=msg.replace(url,'[请点击链接](%s)' % url)
-
+                
         data = {
             "msgtype": "markdown",
             "markdown": {
-                "content": msg 
+                # "content": msg.replace('工单地址：', '工单地址：[请点击链接](').replace('\n工单详情预览：', ')\n工单详情预览：')
+                "content": msg
             },
         }
         res = requests.post(url=send_url, json=data, timeout=5)

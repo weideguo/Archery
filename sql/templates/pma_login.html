@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="wdg" />
+    <title>pma</title>
+    <script src="/static/jquery/jquery.min.js"></script>
+</head>
+
+<body>
+<!--需要先设置代理实现pma的首页跟当前同源-->
+<iframe id="pmaiframe"  frameborder="0" width="100%"  height="800px" scrolling="auto" onload="loginNchangeFrameHeight()" src="/pma/index.php"></iframe>
+<!--iframe id="pmaiframe"  frameborder="0" width="100%"  height="800px" scrolling="auto" onload="loginNchangeFrameHeight()" src="http://10.101.6.17:9235/"></iframe-->
+</body>
+
+<script type="text/javascript" language="javascript"> 
+    function login(){        
+        var servername = sessionStorage.getItem("mysql_servername");
+        var username = sessionStorage.getItem("mysql_username");
+        var password = sessionStorage.getItem("mysql_password");
+
+        sessionStorage.removeItem("mysql_servername");
+        sessionStorage.removeItem("mysql_username");
+        sessionStorage.removeItem("mysql_password");
+
+        // console.log(servername,username,password);
+        // 登陆 没有退出操作，因此如果存在登陆则需要先手动点退出按钮，否则会一直是之前的登陆
+        if(sessionStorage.getItem("is_login")==null) {
+            $("#pmaiframe").contents().find("#input_servername").val(servername);
+            $("#pmaiframe").contents().find("#input_username").val(username);
+            $("#pmaiframe").contents().find("#input_password").val(password);
+            $("#pmaiframe").contents().find("#input_go").click();
+            sessionStorage.setItem("is_login","1");
+        }
+    }
+
+    function changeFrameHeight(){
+        var ifm= document.getElementById("pmaiframe");
+        ifm.height=document.documentElement.clientHeight-20;
+    }
+    
+    function loginNchangeFrameHeight(){
+        login();
+        changeFrameHeight();
+    }
+    
+    window.onresize=function(){ changeFrameHeight();}
+    // $(function(){changeFrameHeight();});
+</script>
+
+</script>
+</html>

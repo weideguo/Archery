@@ -25,12 +25,8 @@ logger = logging.getLogger('default')
 class RedisEngine(EngineBase):
     def get_connection(self, db_name=None):
         db_name = db_name or self.db_name
-        if self.mode == 'cluster':
-            return redis.cluster.RedisCluster(host=self.host, port=self.port, password=self.password,
-                                encoding_errors='ignore', decode_responses=True, socket_connect_timeout=10)
-        else:
-            return redis.Redis(host=self.host, port=self.port, db=db_name, password=self.password,
-                         encoding_errors='ignore', decode_responses=True, socket_connect_timeout=10)
+        return redis.Redis(host=self.host, port=self.port, db=db_name, password=self.password,
+                           encoding_errors='ignore', decode_responses=True, socket_connect_timeout=10)
 
     @property
     def name(self):
@@ -52,7 +48,6 @@ class RedisEngine(EngineBase):
         except Exception as e:
             logger.warning(f"Redis CONFIG GET databases 执行报错，异常信息：{e}")
             rows = 16
-            result.error = str(e)
 
         db_list = [str(x) for x in range(int(rows))]
         result.rows = db_list
@@ -90,10 +85,6 @@ class RedisEngine(EngineBase):
                 else:
                     result_set.rows = tuple([row] for row in rows)
                     result_set.affected_rows = len(rows)
-            elif isinstance(rows, dict):
-                result_set.column_list = ["field", "value"]
-                result_set.rows = tuple([[k, v] for k, v in rows.items()])
-                result_set.affected_rows = len(result_set.rows)
             else:
                 result_set.rows = tuple([[rows]])
                 result_set.affected_rows = 1 if rows else 0

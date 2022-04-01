@@ -203,11 +203,6 @@
                                         <a href="/binlog2sql/">Binlog2SQL</a>
                                     </li>
                                 {% endif %}
-                                {% if perms.sql.menu_my2sql %}
-                                    <li>
-                                        <a href="/my2sql/">My2SQL</a>
-                                    </li>
-                                {% endif %}
                                 {% if perms.sql.menu_schemasync %}
                                     <li>
                                         <a href="/schemasync/">SchemaSync</a>
@@ -246,6 +241,7 @@
                             <!-- /.nav-second-level -->
                         </li>
                     {% endif %}
+
                     {% if perms.sql.audit_user %}
                         <li>
                             <a href="#"><i class="fa fa-eye fa-fw"></i> 系统审计<span class="fa arrow"></span></a>
@@ -262,6 +258,7 @@
                             </ul>
                         </li>
                     {% endif %}
+
                     {% if perms.sql.menu_document %}
                         <li>
                             <a href="/dbaprinciples/"><i class="fa fa-sitemap fa-fw"></i> 相关文档</a>
@@ -302,7 +299,6 @@
 <script src="{% static 'sql-formatter/sql-formatter.min.js' %}"></script>
 <script src="{% static 'dist/js/formatter.js' %}"></script>
 <script src="{% static 'dist/js/utils.js' %}"></script>
-
 </body>
 <script>
     <!-- 解决CSRF-->

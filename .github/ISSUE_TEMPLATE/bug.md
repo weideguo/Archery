@@ -1,7 +1,7 @@
 ---
 name: BUG提交
 about: BUG提交，必须使用这个模板，不规范issue将直接关闭
-title: "[ bug ]请简要描述"
+title: "[ bug ]"
 labels: ''
 assignees: ''
 
@@ -36,6 +36,7 @@ assignees: ''
 ```
 /logs/archery.log
 /logs/qcluster.log
+/logs/soar.log
 docker logs archery -f --tail=10
 ```
 -->

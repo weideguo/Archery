@@ -20,8 +20,6 @@
                 <option value="oracle">Oracle</option>
                 <option value="mongo">Mongo</option>
                 <option value="phoenix">Phoenix</option>
-                <option value="odps">ODPS</option>
-                <option value="clickhouse">ClickHouse</option>
             </select>
         </div>
         <div class="form-group">
@@ -93,7 +91,6 @@
                 pagination: true,                   //是否显示分页（*）
                 sortable: true,                     //是否启用排序
                 sortOrder: "asc",                   //排序方式
-                sortName: 'id',                   //排序字段
                 sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
                 pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
                 pageSize: 14,                     //每页的记录行数（*）
@@ -125,19 +122,15 @@
                             type: $("#type").val(),
                             db_type: $("#db_type").val(),
                             tags: $("#tags").val(),
-                            sortName: params.sort,
-                            sortOrder: params.order
                         }
                     },
                 columns: [
                     {
                         title: 'ID',
-                        field: 'id',
-                        sortable: true
+                        field: 'id'
                     }, {
                         title: '实例名称',
                         field: 'instance_name',
-                        sortable: true,
                         formatter: function (value, row, index) {
                             return "<a target=\"_blank\" href=\"/admin/sql/instance/" + row.id + "/change/\">" + value + "</a>"
                         }
@@ -146,12 +139,10 @@
                         field: 'type'
                     }, {
                         title: '数据库类型',
-                        field: 'db_type',
-                        sortable: true
+                        field: 'db_type'
                     }, {
                         title: 'HOST',
-                        field: 'host',
-                        sortable: true
+                        field: 'host'
                     }, {
                         title: 'PORT',
                         field: 'port'
@@ -164,11 +155,15 @@
                         formatter: function (value, row, index) {
                             var btn_del_binLog = '';
                             var btn_user_manger = '';
+                            var btn_pma_login ='';
                             if (row.db_type === 'mysql') {
-                                btn_del_binLog = "<button class=\"btn btn-danger btn-xs\" instance_id=\"" + row.id + "\" + instance_name=\"" + row.instance_name + "\"+ onclick=\"del_binLog(this)" + "\">Binlog清理</button>\n"
+                                btn_del_binLog = "<button class=\"btn btn-danger btn-xs\" instance_id=\"" + row.id + "\"  instance_name=\"" + row.instance_name + "\"+ onclick=\"del_binLog(this)" + "\">Binlog清理</button>\n";
+                                {% if pma == 1 %}
+                                btn_pma_login = "<button class=\"btn btn-warning btn-xs\" instance_id=\"" + row.id + "\"  instance_name=\"" + row.instance_name + "\"+ onclick=\"pma_login("+ row.id +")" + "\">PMA登陆</button>\n";
+                                {% endif %}
                             }
                             var btn_test = "<button class=\"btn btn-warning btn-xs\" instance_id=\"" + row.id + "\" onclick=\"check_instance(this)" + "\">测试</button>\n";
-                            return btn_user_manger + btn_del_binLog + btn_test
+                            return btn_user_manger + btn_del_binLog + btn_test + btn_pma_login
                         }
                     }],
                 onLoadSuccess: function () {
@@ -180,6 +175,41 @@
                 }
             });
 
+        }
+        // phpmyadmin登陆
+        function pma_login(id) {
+            console.log(id)
+            $.ajax({
+                type: "get",
+                url: "/instance/detail/",
+                dataType: "json",
+                data: {
+                    id: id
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        console.log(data);
+                        sessionStorage.setItem("mysql_servername",data.data.host+" "+data.data.port);
+                        sessionStorage.setItem("mysql_username",data.data.user);
+                        sessionStorage.setItem("mysql_password",data.data.password);
+                        
+                        window.open("/pma_login/");
+                        
+                        sessionStorage.removeItem("mysql_servername");
+                        sessionStorage.removeItem("mysql_username");
+                        sessionStorage.removeItem("mysql_password");
+
+                    } else {
+                        console.log(data);
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
         }
 
         // 检测邮件

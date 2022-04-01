@@ -257,7 +257,7 @@ def regex(masking_rules, rule_type, value):
 
 
 def brute_mask(instance, sql_result):
-    """输入的是一个resultset
+    """输入的是一个resultset 
     sql_result.full_sql
     sql_result.rows 查询结果列表 List , list内的item为tuple
 
@@ -348,3 +348,4 @@ def simple_column_mask(instance, sql_result):
             sql_result.error = str(e)
 
     return sql_result
+

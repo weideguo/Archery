@@ -1,4 +1,4 @@
-Django==3.1.14
+Django==3.1.6
 mysqlclient==2.0.1
 requests==2.24.0
 simplejson==3.17.2
@@ -26,6 +26,3 @@ uvloop==0.14.0
 httptools==0.1.1
 uvicorn==0.12.2
 pycryptodome==3.10.1
-pandas==1.1.5
-pyodps==0.10.7.1
-clickhouse-driver==0.2.3

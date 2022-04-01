@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: {{ include "archery.fullname" . }}
@@ -21,27 +21,21 @@ spec:
     spec:
       initContainers:
         - image: busybox
-          name: init-mysql
+          name: init-container
           imagePullPolicy: IfNotPresent
-          command: ['sh', '-c', 'until nslookup archery-mysql; do echo waiting for mysql; sleep 10; done;']
-        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          name: init-archery
-          imagePullPolicy: IfNotPresent
+          args:
+            - "mkdir"
+            - "-p"
+            - "/opt/archery/downloads/{binlog2sql,log,schemasync}"
           volumeMounts:
-          - name: archery-settings
-            subPath: settings.py
-            mountPath: /opt/archery/archery/settings.py
-          - name: archery-settings
-            subPath: init-archery.sh
-            mountPath: /opt/archery/src/docker/init-archery.sh
-          - name: archery-settings
-            subPath: createsuperuser.py
-            mountPath: /opt/archery/src/docker/createsuperuser.py
           - mountPath: /opt/archery/downloads
             name: archery-download
           - mountPath: /opt/archery/src/script
             name: archery-script
-          command: ['/bin/bash','/opt/archery/src/docker/init-archery.sh']
+        - image: busybox
+          name: init-mysql
+          imagePullPolicy: IfNotPresent
+          command: ['sh', '-c', 'until nslookup archery-mysql; do echo waiting for mysql; sleep 2; done;']
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -57,11 +51,10 @@ spec:
             httpGet:
               path: /
               port: archery
-            initialDelaySeconds: 180
-            periodSeconds: 60
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 3
+          lifecycle:
+            postStart:
+              exec:
+                command: ['/bin/bash','/opt/archery/src/docker/init-archery.sh']
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}

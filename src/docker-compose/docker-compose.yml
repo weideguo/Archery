@@ -35,13 +35,13 @@ services:
     image: hanchuanchuan/goinception
     container_name: goinception
     restart: always
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     volumes:
       - "./inception/config.toml:/etc/config.toml"
 
   archery:
-    image: hhyo/archery:v1.8.3
+    image: hhyo/archery:1.8.1
     container_name: archery
     restart: always
     ports:
@@ -53,7 +53,6 @@ services:
       - "./archery/downloads:/opt/archery/downloads"
       - "./archery/sql/migrations:/opt/archery/sql/migrations"
       - "./archery/logs:/opt/archery/logs"
-      - "./archery/keys:/opt/archery/keys"
     entrypoint: "dockerize -wait tcp://mysql:3306 -wait tcp://redis:6379 -timeout 60s /opt/archery/src/docker/startup.sh"
     environment:
       NGINX_PORT: 9123

@@ -86,8 +86,7 @@ DB_TYPE_CHOICES = (
     ('oracle', 'Oracle'),
     ('mongo', 'Mongo'),
     ('phoenix', 'Phoenix'),
-    ('odps', 'ODPS'),
-    ('clickhouse', 'ClickHouse'),
+    ('inception', 'Inception'),
     ('goinception', 'goInception'))
 
 
@@ -100,20 +99,13 @@ class Tunnel(models.Model):
     port = models.IntegerField('端口', default=0)
     user = fields.EncryptedCharField(verbose_name='用户名', max_length=200, default='', blank=True, null=True)
     password = fields.EncryptedCharField(verbose_name='密码', max_length=300, default='', blank=True, null=True)
-    pkey = fields.EncryptedTextField(verbose_name="密钥", blank=True, null=True)
-    pkey_path = models.FileField(verbose_name="密钥地址", blank=True, null=True, upload_to='keys/')
+    pkey_path = fields.EncryptedCharField(verbose_name='密钥地址', max_length=300, default='', blank=True, null=True)
     pkey_password = fields.EncryptedCharField(verbose_name='密钥密码', max_length=300, default='', blank=True, null=True)
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('更新时间', auto_now=True)
 
     def __str__(self):
         return self.tunnel_name
-
-    def short_pkey(self):
-        if len(str(self.pkey)) > 20:
-            return '{}...'.format(str(self.pkey)[0:19])
-        else:
-            return str(self.pkey)
 
     class Meta:
         managed = True
@@ -129,7 +121,6 @@ class Instance(models.Model):
     instance_name = models.CharField('实例名称', max_length=50, unique=True)
     type = models.CharField('实例类型', max_length=6, choices=(('master', '主库'), ('slave', '从库')))
     db_type = models.CharField('数据库类型', max_length=20, choices=DB_TYPE_CHOICES)
-    mode = models.CharField('运行模式', max_length=10, default='', blank=True, choices=(('standalone', '单机'), ('cluster', '集群')))
     host = models.CharField('实例连接', max_length=200)
     port = models.IntegerField('端口', default=0)
     user = fields.EncryptedCharField(verbose_name='用户名', max_length=200, default='', blank=True)
@@ -590,7 +581,7 @@ class ArchiveLog(models.Model):
     statistics = models.TextField('归档统计日志')
     success = models.BooleanField('是否归档成功')
     error_info = models.TextField('错误信息')
-    start_time = models.DateTimeField('开始时间')
+    start_time = models.DateTimeField('开始时间', auto_now_add=True)
     end_time = models.DateTimeField('结束时间')
     sys_time = models.DateTimeField('系统时间修改', auto_now=True)
 
@@ -701,7 +692,6 @@ class Permission(models.Model):
             ('menu_tools', '菜单 工具插件'),
             ('menu_archive', '菜单 数据归档'),
             ('menu_binlog2sql', '菜单 Binlog2SQL'),
-            ('menu_my2sql', '菜单 My2SQL'),
             ('menu_schemasync', '菜单 SchemaSync'),
             ('menu_system', '菜单 系统管理'),
             ('menu_document', '菜单 相关文档'),
@@ -731,8 +721,9 @@ class Permission(models.Model):
             ('archive_apply', '提交归档申请'),
             ('archive_review', '审核归档申请'),
             ('archive_mgt', '管理归档申请'),
-            ('audit_user','审计权限'),
+            ('audit_all_query', '审计所有的查询'),
             ('query_download', '在线查询下载权限'),
+            ('audit_user','审计权限'),
         )
 
 
@@ -865,6 +856,23 @@ class SlowQueryHistory(models.Model):
         index_together = ('hostname_max', 'ts_min')
         verbose_name = u'慢日志明细'
         verbose_name_plural = u'慢日志明细'
+
+
+class Audit(models.Model):
+    """ 
+    操作审计表
+    """
+    id = models.AutoField(primary_key=True)               
+    opt_username = models.CharField('操作的用户名',max_length=150, null=False) # varchar(150)
+    opt_display  = models.CharField('操作的用户中文名',max_length=50, null=False)  # varchar(50)
+    opt_type     = models.CharField('操作的类型', max_length=50, null=False)  # varchar(50)
+    opt_date     = models.DateTimeField('操作的时间',auto_now=True,  db_index=True)
+
+    class Meta:
+        managed = True
+        db_table = 'sql_audit'
+        verbose_name = u'操作审计表'
+        verbose_name_plural = u'操作审计表'
 
 
 class AuditEntry(models.Model):

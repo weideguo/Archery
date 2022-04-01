@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  archery_new_${VERSION}:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: archery_new:${VERSION}
+    container_name: archery_new_${VERSION}
+    restart: always
+    ports:
+      - "9125:9123"
+    entrypoint: "dockerize -wait tcp://mysql:3306 -wait tcp://redis:6379 -timeout 60s /opt/archery/src/docker/startup.sh"
+    environment:
+      NGINX_PORT: 9123
+    networks:
+      - default
+
+networks:
+  default:
+    external:
+      name: docker-compose_default
