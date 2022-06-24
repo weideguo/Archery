@@ -1,5 +1,5 @@
 from django_filters import rest_framework as filters
-from sql.models import Users, Instance, SqlWorkflowContent, WorkflowAudit
+from sql.models import Users, Instance, SqlWorkflowContent, WorkflowAudit, SysbenchWorkflow
 
 
 class UserFilter(filters.FilterSet):
@@ -47,4 +47,18 @@ class WorkflowAuditFilter(filters.FilterSet):
         fields = {
             'workflow_title': ['icontains'],
             'workflow_type': ['exact'],
+        }
+
+
+class SysbenchWorkflowFilter(filters.FilterSet):
+
+    class Meta:
+        model = SysbenchWorkflow
+        fields = {
+            'id': ['exact'],
+            'title': ['contains'],
+            'instance__id': ['exact'],
+            'instance__instance_name': ['icontains'],
+            'create_time': ['lt', 'gte'],
+            'finish_time': ['lt', 'gte'],
         }

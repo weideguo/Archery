@@ -1,6 +1,7 @@
+# -*- coding: UTF-8 -*-
 from rest_framework import serializers
 from sql.models import Users, Instance, Tunnel, AliyunRdsConfig, CloudAccessKey, \
-    SqlWorkflow, SqlWorkflowContent, ResourceGroup, WorkflowAudit, WorkflowLog
+    SqlWorkflow, SqlWorkflowContent, ResourceGroup, WorkflowAudit, WorkflowLog,SysbenchWorkflow
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -464,3 +465,27 @@ class ExecuteWorkflowSerializer(serializers.Serializer):
             raise serializers.ValidationError({"errors": "不存在该工单"})
 
         return attrs
+
+
+class ResourceGroupShortSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ResourceGroup
+        fields = ['group_name']
+
+class InstanceShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Instance
+        fields = ['id', 'instance_name','db_type']
+        read_only_fields = ['id', 'db_type']
+
+class SysbenchWorkflowSerializer(serializers.ModelSerializer):
+    resource_group = ResourceGroupShortSerializer()
+    instance = InstanceShortSerializer()
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    finish_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    class Meta:
+        model = SysbenchWorkflow
+        #fields = ['id', 'title', 'db_name', 'threads', 'duration', 'status', 'user_display', 'create_time', 'instance','resource_group' ] 
+        fields = '__all__'
+

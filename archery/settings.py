@@ -198,6 +198,7 @@ REST_FRAMEWORK = {
     ),
     # 权限
     'DEFAULT_PERMISSION_CLASSES': ('sql_api.permissions.IsInUserWhitelist',),
+    #'DEFAULT_PERMISSION_CLASSES': ('sql_api.permissions.BasePermission',),
     # 限速（anon：未认证用户  user：认证用户）
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.AnonRateThrottle',

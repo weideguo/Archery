@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="row clearfix">
+        <div class="col-md-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    操作选项
+                </div>
+                <div class="panel-body">
+                    <form id="form-sysbench"  onsubmit="return false;" onclick="return false;">
+                        <div class="form-group">
+                                <input id="sysbench_name" type="text" autocomplete="off" name="sysbench_name"
+                                       class="form-control"
+                                       data-name="压测申请的名称" data-placeholder="请输入压测申请的名称"
+                                       placeholder="压测申请的名称"
+                                       required>
+                        </div>
+                        <div class="form-group">
+                            <h5 class="control-label text-bold">选择组：</h5>
+                            <div class="form-group">
+                                <select id="group_name" name="group_name"
+                                        class="selectpicker show-tick form-control bs-select-hidden"
+                                        data-name="组" data-placeholder="请选择组！"
+                                        title="请选择组"
+                                        data-live-search="true" data-live-search-placeholder="搜索您所在的组" required>
+                                    {% for group in group_list %}
+                                        <option value="{{ group.group_name }}">{{ group.group_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <h5 class="control-label text-bold">选择实例：</h5>
+                            <div class="form-group">
+                                <select id="instance_name" name="instance_name"
+                                        class="selectpicker show-tick form-control bs-select-hidden"
+                                        title="请选择实例"
+                                        data-live-search="true" 
+                                        data-placeholder="请选择实例"
+                                        required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <h5 class="control-label text-bold">选择数据库：</h5>
+                            <div class="form-group">
+                                <select id="db_name" class="selectpicker form-control "
+                                        data-live-search="true"
+                                        title="请选择数据库"
+                                        data-placeholder="请选择数据库"
+                                        required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <h5 class="control-label text-bold">压测的SQL：</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="sql" placeholder="压测的SQL，可以使用“?”占位符标明为变量"
+                                       data-placeholder="请输入SQL"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <h5 class="control-label text-bold">线程数：</h5>
+                            <div class="form-group">
+                                <input type="number" class="form-control" id="threads" placeholder="默认4个线程"
+                                       onkeyup="if(event.keyCode !=37 && event.keyCode != 39)value=value.replace(/\D/g,'')">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <h5 class="control-label text-bold">压测持续时间：</h5>
+                            <div class="form-group">
+                                <input type="number" class="form-control" id="duration" placeholder="默认10秒"
+                                       onkeyup="if(event.keyCode !=37 && event.keyCode != 39)value=value.replace(/\D/g,'')">
+                            </div>
+                        </div>
+                        <input type="hidden" id="workflow_auditors" name="workflow_auditors" data-name="审批流程"
+                               data-placeholder="请配置审批流程！" required>
+                        <div class="form-group" id="div-workflow_auditors" style="display: none">
+                             <p class="bg-primary">&nbsp&nbsp&nbsp审批流程：<b id="workflow_auditors_display"></b></p>
+                        </div>
+                        <div class="form-group">
+                            <button id="sql_params" class="btn btn-primary">获取SQL参数</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9 column">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    SQL参数设置
+                </div>
+                <!--这个应该在上一个按钮点击后才显示-->
+                <div class="panel-body">
+                    <div class="form-group">
+                        <select id="spliter" 
+                                class="form-control selectpicker show-tick bs-select-hidden"
+                                title="请选择参数分割符（默认为逗号）">
+                            <option value=",">,</option>
+                            <option value="|">|</option>
+                            <option value=";">;</option>
+                            <option value="#">#</option>
+                            <option value=" ">空格</option>
+                        </select>
+                    </div>
+
+                    <form id="form-sqlparams" onsubmit="return false;" onclick="return false;">
+                        <div class="form-group" id="form-param1" hidden>
+                            <h5 class="control-label text-bold">第1个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param1" data-placeholder="请输入第1个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param2" hidden>
+                            <h5 class="control-label text-bold">第2个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param2" data-placeholder="请输入第2个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param3" hidden>
+                            <h5 class="control-label text-bold">第3个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param3" data-placeholder="请输入第3个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param4" hidden>
+                            <h5 class="control-label text-bold">第4个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param4" data-placeholder="请输入第4个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param5" hidden>
+                            <h5 class="control-label text-bold">第5个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param5" data-placeholder="请输入第5个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param6" hidden>
+                            <h5 class="control-label text-bold">第6个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param6" data-placeholder="请输入第6个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param7" hidden>
+                            <h5 class="control-label text-bold">第7个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param7" data-placeholder="请输入第7个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param8" hidden>
+                            <h5 class="control-label text-bold">第8个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param8" data-placeholder="请输入第8个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param9" hidden>
+                            <h5 class="control-label text-bold">第9个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param9" data-placeholder="请输入第9个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param10" hidden>
+                            <h5 class="control-label text-bold">第10个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param10" data-placeholder="请输入第10个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param11" hidden>
+                            <h5 class="control-label text-bold">第11个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param11" data-placeholder="请输入第11个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param12" hidden>
+                            <h5 class="control-label text-bold">第12个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param12" data-placeholder="请输入第12个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param13" hidden>
+                            <h5 class="control-label text-bold">第13个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param13" data-placeholder="请输入第13个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param14" hidden>
+                            <h5 class="control-label text-bold">第14个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param14" data-placeholder="请输入第14个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param15" hidden>
+                            <h5 class="control-label text-bold">第15个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param15" data-placeholder="请输入第15个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param16" hidden>
+                            <h5 class="control-label text-bold">第16个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param16" data-placeholder="请输入第16个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param17" hidden>
+                            <h5 class="control-label text-bold">第17个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param17" data-placeholder="请输入第17个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param18" hidden>
+                            <h5 class="control-label text-bold">第18个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param18" data-placeholder="请输入第18个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param19" hidden>
+                            <h5 class="control-label text-bold">第19个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param19" data-placeholder="请输入第19个参数变量" required>
+                            </div>
+                        </div>
+                        <div class="form-group" id="form-param20" hidden>
+                            <h5 class="control-label text-bold">第20个参数变量</h5>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="param20" data-placeholder="请输入第20个参数变量" required>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="form-group">
+                        <div class="checkbox">
+                            <label>
+                                <input id="params_sync" type="checkbox">
+                                所有参数是否同步变化（设置这个需要每个参数个数一致）
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button id="commit_bench" class="btn btn-primary">提交工单</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block js %}
+    {% load static %}
+    <script src="{% static 'bootstrap-table/js/bootstrap-table-export.min.js' %}"></script>
+    <script src="{% static 'bootstrap-table/js/tableExport.min.js' %}"></script>
+    <script>
+        function validateForm(element, limit=0) {
+            var result = true;
+            let i = 0;
+            let required_element = element.find('[required]');
+            if (limit) {
+                required_element = required_element.slice(0,limit);
+            }
+            required_element.each(
+                function () {
+                    var fieldElement = $(this);
+                    //如果为null则设置为''
+                    var value = fieldElement.val() || '';
+                    if (value) {
+                        value = value.trim();
+                    }
+                    if (!value || value === fieldElement.attr('data-placeholder')) {
+                        alert(fieldElement.attr('data-placeholder'));
+                        result = false;
+                        return result;
+                    }
+                }
+            );
+            return result;
+        }
+
+        $("#group_name").change(function () {
+            $.ajax({
+                type: "post",
+                url: "/group/instances/",
+                dataType: "json",
+                data: {
+                    group_name: $("#group_name").val(),
+                    tag_code: "can_sysbench",
+                    db_type: "mysql"
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        let result = data['data'];
+                        $("#instance_name").empty();
+                        for (let i = 0; i < result.length; i++) {
+                            let instance = "<option value=\"" + result[i]['instance_name'] + "\">" + result[i]['instance_name'] + "</option>";
+                            $("#instance_name").append(instance);
+                        }
+                        $('#instance_name').selectpicker('render');
+                        $('#instance_name').selectpicker('refresh');
+                        $("#db_name").empty();
+                        $('#db_name').selectpicker('render');
+                        $('#db_name').selectpicker('refresh');
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+            $.ajax({
+                type: "post",
+                url: "/group/auditors/",
+                dataType: "json",
+                data: {
+                    group_name: $("#group_name").val(),
+                    workflow_type: 4
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data.data;
+                        $("#workflow_auditors").val(result['auditors']);
+                        $("#workflow_auditors_display").text(result['auditors_display']);
+                        $("#div-workflow_auditors").show();
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        });
+
+        // 实例变更获取数据库
+        $("#instance_name").change(function () {
+            //获取db_name
+            $.ajax({
+                type: "get",
+                url: "/instance/instance_resource/",
+                dataType: "json",
+                data: {
+                    instance_name: $("#instance_name").val(),
+                    resource_type: "database"
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data.data;
+                        $("#db_name").empty();
+                        for (var i = 0; i < result.length; i++) {
+                            var name = "<option value=\"" + result[i] + "\">" + result[i] + "</option>";
+                            $("#db_name").append(name);
+                        }
+                        $('#db_name').selectpicker('render');
+                        $('#db_name').selectpicker('refresh');
+                    } else {
+                        alert(data.msg);
+                    }
+                }
+            });
+        });
+
+        var sqlParamsLen = 0;
+
+        // 获取SQL参数
+        $("#sql_params").click(function () {
+            let formSysbench = $("#form-sysbench");
+            if ( validateForm(formSysbench) ) {
+                let sqlParamsRaw = $("#sql").val().match(/\?/g)
+                if (sqlParamsRaw === null) {
+                    sqlParamsLen = 0
+                } else {
+                    sqlParamsLen = sqlParamsRaw.length
+                }
+                console.log(sqlParamsLen);
+                if ( sqlParamsLen<=20 ) {
+                    for(var i = 1; i <= sqlParamsLen; i+=1){
+                        $("#form-param"+i).removeAttr("hidden");
+                    }
+                    $("#sql")[0].setAttribute("disabled","disabled");
+                    $("#commit_bench").removeClass('disabled');
+                    $("#commit_bench").prop('disabled', false);
+            
+                    $("#sql_params").addClass('disabled');
+                    $("#sql_params").prop('disabled', true);
+                } else {
+                    alert("sql压测参数暂时不支持超过20个");
+                };
+            }
+
+        });
+
+        // 提交成工单
+        $("#commit_bench").click(function () {
+            let formSqlparams = $("#form-sqlparams");
+            if ( sqlParamsLen === 0 || validateForm(formSqlparams,sqlParamsLen) ) {
+                let title = $("#sysbench_name").val();
+                let groupName = $("#group_name").val();
+                let instanceName = $("#instance_name").val();
+                let database = $("#db_name").val();
+                let sql = $("#sql").val();
+                let threads = $("#threads").val();
+                let duration = $("#duration").val();
+                if (!threads){threads=4};
+                if (!duration){duration=10};
+                let auditors = $("#workflow_auditors").val();
+
+                let spliter = $("#spliter").val();
+                if (!spliter) {spliter = ","};
+                
+                let sqlParams = [];
+                for(let i=1; i<=sqlParamsLen; i+=1){
+                    sqlParams.push($("#param"+i).val());
+                }
+
+                let notEqualIndex = 0;
+                let paramsSync = document.getElementById("params_sync").checked;
+
+                // 不要在前端处理分割
+                let _sqlParams = [];
+                for (let i=0; i<sqlParams.length; i+=1) {
+                    _sqlParams[i] = sqlParams[i].split(spliter);
+                }
+
+                if (paramsSync) {
+                    paramsSync = 1;
+                    let itmeLen = 0;
+                    for (let i=0; i<sqlParams.length; i+=1) {
+                        let _itmeLen = sqlParams[i].split(spliter).length;
+                        if (!itmeLen) {
+                            itmeLen = _itmeLen;
+                        } else if(itmeLen != _itmeLen) {
+                            notEqualIndex = i+1;
+                            break;
+                        }
+                    };
+                } else {
+                    paramsSync = 0;
+                }
+
+                if (!notEqualIndex) {
+                    $("#sql_params").removeClass('disabled');
+                    $("#sql_params").prop('disabled', false);
+                    $("#commit_bench").addClass('disabled');
+                    $("#commit_bench").prop('disabled', true);         
+                    $("#sql")[0].removeAttribute("disabled");
+                    
+                    sqlParams = JSON.stringify(sqlParams)    
+                    $.ajax({
+                        type: "post",
+                        url: "/api/v1/sysbench/",
+                        dataType: "json",
+                        // 不能设置这个 why?
+                        // headers: {
+                        //     "accept": "application/json",
+                        //     "Content-Type": "application/json"
+                        // },
+                        data: {
+                                "title": title,
+                                "audit_auth_groups": auditors,
+                                "db_name": database,
+                                "sql_content": sql,
+                                "threads": threads,
+                                "duration": duration,
+                                "sql_params": sqlParams,
+                                "params_sync": paramsSync,
+                                "status": "workflow_manreviewing",
+                                "resource_group": {"group_name": groupName},  
+                                "instance": {"instance_name": instanceName}
+                        },
+                        complete: function () {
+                        },
+                        success: function (data) {
+                            // if (Object.keys(data).length) {
+                            if ( successMsgSolve(data) ) {
+                                // alert("插入成功");
+                                let workflowId = data.data.id;
+                                document.location.href="/sysbench/"+workflowId
+                            } else {
+                                alert("返回值异常，请确认后端插入数据库情况");
+                            }
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            alert(errorThrown);
+                        }
+                    });
+                
+                } else {
+                    alert("第"+notEqualIndex+"个参数跟第1个参数使用分割符分割后长度不一致");
+                }
+            }
+        });
+
+
+        $(document).ready(function () {
+            // 禁用提交按钮，点击获取SQL参数后再激活
+            $("#commit_bench").addClass('disabled');
+            $("#commit_bench").prop('disabled', true);
+        });
+
+
+    </script>
+{% endblock %}

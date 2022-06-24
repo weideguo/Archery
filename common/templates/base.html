@@ -214,6 +214,11 @@
                                         <a href="/schemasync/">SchemaSync</a>
                                     </li>
                                 {% endif %}
+                                {% if perms.sql.menu_sysbench %}
+                                    <li>
+                                        <a href="/sysbench/">sysbench</a>
+                                    </li>
+                                {% endif %}
                             </ul>
                             <!-- /.nav-second-level -->
                         </li>

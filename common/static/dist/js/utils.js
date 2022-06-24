@@ -45,7 +45,22 @@ var jsonHighLight = function(json) {
     });
 };
 
-// 这个函数存在报错，因此不应该把任何模块放在这个模块之后
+// 统一处理后端api返回的信息
+var successMsgSolve = function(data) {
+    console.log(data);
+    if ( data.status === undefined ) {
+        alert(JSON.stringify(data));
+    } else if (data.status != 0) {
+        if (typeof(data.msg) === 'object') {
+            alert(JSON.stringify(data.msg));
+        } else {
+            alert(data.msg);
+        }
+    } else {
+        return data;
+    }
+};
+
 // 实例配置页面根据db_type选择显示或隐藏mode字段，mode字段只适用于redis实例
 (function($) {
     $(function() {

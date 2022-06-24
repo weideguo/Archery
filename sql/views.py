@@ -21,7 +21,7 @@ from sql.engines.models import ReviewResult, ReviewSet
 from sql.utils.tasks import task_info
 
 from .models import Users, SqlWorkflow, QueryPrivileges, ResourceGroup, \
-    QueryPrivilegesApply, Config, SQL_WORKFLOW_CHOICES, InstanceTag, Instance, QueryLog, ArchiveConfig, AuditEntry
+    QueryPrivilegesApply, Config, SQL_WORKFLOW_CHOICES, InstanceTag, Instance, QueryLog, ArchiveConfig, AuditEntry,SysbenchWorkflow
 from sql.utils.workflow_audit import Audit
 from sql.utils.sql_review import can_execute, can_timingtask, can_cancel, can_view, can_rollback
 from common.utils.const import Const, WorkflowDict
@@ -354,6 +354,24 @@ def schemasync(request):
     return render(request, 'schemasync.html')
 
 
+@permission_required('sql.menu_sysbench', raise_exception=True)
+def sysbench_apply(request):
+    """sysbench压测申请"""
+    group_list = user_groups(request.user)
+    return render(request, 'sysbench_apply.html', {'group_list': group_list})
+
+@permission_required('sql.menu_sysbench', raise_exception=True)
+def sysbench(request):
+    """sysbench工单列表"""
+    ins_list = user_instances(request.user, db_type=['mysql']).order_by(Convert('instance_name', 'gbk').asc())
+    return render(request, 'sysbench.html', {'ins_list': ins_list})
+
+
+def sysbench_detail(request, id):
+    """sysbench工单详情页面"""
+    return render(request, 'sysbench_detail.html', {'id':id})
+
+
 @permission_required('sql.menu_archive', raise_exception=True)
 def archive(request):
     """归档列表页面"""
@@ -441,6 +459,8 @@ def workflowsdetail(request, audit_id):
         return HttpResponseRedirect(reverse('sql:detail', args=(audit_detail.workflow_id,)))
     elif audit_detail.workflow_type == WorkflowDict.workflow_type['archive']:
         return HttpResponseRedirect(reverse('sql:archive_detail', args=(audit_detail.workflow_id,)))
+    elif audit_detail.workflow_type == WorkflowDict.workflow_type['sysbench']:
+        return HttpResponseRedirect(reverse('sql:sysbench_detail', args=(audit_detail.workflow_id,)))
 
 
 @permission_required('sql.menu_document', raise_exception=True)

@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+{% load format_tags %}
+{% block content %}
+    <!--有管理权限的用户可以直接编辑-->
+    <div class="form-inline">
+        <h4 style="display: inline;">工单名称：<span>{{ sysbench_workflow.title }}</span></h4>&nbsp;&nbsp;&nbsp;
+    </div>
+    <hr>
+    <table data-toggle="table" class="table table-striped table-hover"
+           style="table-layout:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <thead>
+        <tr>
+            <th>
+                申请人
+            </th>
+            <th>
+                审批流程
+            </th>
+            <th>
+                当前审批
+            </th>
+            <th>
+                实例
+            </th>
+            <th>
+                数据库
+            </th>
+            <th>
+                申请时间
+            </th>
+            <th>
+                当前状态
+            </th>
+            <th>
+                组
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="success">
+            <td id="user_display">
+            </td>
+            <td id="audit_auth_group">
+            </td>
+            <td id="current_audit_auth_group">
+            </td>
+            <td id="instance">
+            </td>
+            <td id="db_name">
+            </td>
+            <td id="create_time">
+            </td>
+            <td >
+                <B id="workflow_detail_disaply"></B>
+            </td>
+            <td id="resource_group">
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <br>
+    <!-- Nav tabs -->
+    <ul id="nav-tabs" class="nav nav-tabs" role="tablist">
+        <li id="detail_tab" class="active">
+            <a href="#detail" role="tab" data-toggle="tab">压测信息</a>
+        </li>
+        <li id="logs_tab">
+            <a href="#logs" role="tab" data-toggle="tab">压测日志</a>
+        </li>
+    </ul>
+    <!-- Tab panes -->
+    <div id="tab-content" class="tab-content">
+        <!-- 压测信息-->
+        <div id="detail" role="tabpanel" class="panel-body tab-pane fade in active form-group">
+            <h4><b>压测信息</b></h4>
+            <hr/>
+            <div class="form-horizontal">
+                <div class="form-group form-inline">
+                    <label class="col-sm-2 control-label">SQL</label>
+                    <div class="col-sm-10">
+                        <p class="form-control-static" id="sql_content"></p>
+                    </div>
+                    <label class="col-sm-2 control-label">SQL参数</label>
+                    <div class="col-sm-10">
+                        <p class="form-control-static" id="sql_params"></p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!--最后操作信息-->
+            <table data-toggle="table" class="table table-striped table-hover"
+                   style="table-layout:inherit;overflow:hidden;text-overflow:ellipsis;" id="table_last_operation_info" hidden>
+                <thead>
+                <tr>
+                    <th>
+                        操作信息
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td id="last_operation_info">
+                        
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br>
+            
+
+        </div>
+        <!-- 压测日志-->
+        <div id="logs" role="tabpanel" class="tab-pane fade table-responsive">
+            <div class="form-horizontal">
+                <div class="form-inline" id="success_result" hidden>
+                    <br/>
+                    <h4><b>执行结果分析（毫秒）</b></h4>
+                    <hr/>
+                    <label class="col-sm-2 control-label">最小</label>
+                    <div class="col-sm-10">
+                        <p id="min" class="form-control-static"></p>
+                    </div>
+                    <label class="col-sm-2 control-label">最大</label>
+                    <div class="col-sm-10">
+                        <p id="max" class="form-control-static"></p>
+                    </div>
+                    <label class="col-sm-2 control-label">平均</label>
+                    <div class="col-sm-10">
+                        <p id="avg" class="form-control-static"></p>
+                    </div>
+                    <label class="col-sm-2 control-label">95%</label>
+                    <div class="col-sm-10">
+                        <p id="95th" class="form-control-static"></p>
+                    </div>
+
+                </div>
+
+                <div class="form-inline" id="failed_result" hidden>
+                    <h4><b>执行失败</b></h4>
+                    </hr>
+                    <label class="col-sm-2 control-label">stdout</label>
+                    <div class="col-sm-10">
+                        <p id="stdout"class="form-control-static"></p>
+                    </div>
+                    <label class="col-sm-2 control-label">stderr</label>
+                    <div class="col-sm-10">
+                        <p id="stderr" class="form-control-static"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </br>
+    </br>
+
+
+    <!--审核备注输入框-->
+    <div id="textarea-remark">
+        <textarea id="remark" ame="remark" class="form-control" data-name="审核备注"
+                  placeholder="请填写审核备注/终止原因" rows=3 ></textarea>
+        <br>
+    </div>
+    
+    <div style="height: 50px;">
+        <!--审核通过按钮-->
+        <div style="float:left" id="form-passed">
+            <form style="display:inline-block;">
+                <input type="button" id="btnPass" class="btn btn-success" value="审核通过"/>
+            </form>
+        </div>
+        <!--执行按钮-->
+        <div style="float:left; margin-left:10px" id="form-execute" >
+            <form style="display:inline-block;">
+                <input type="button" id="btnExecute" class="btn btn-danger"
+                       value="执行"/>
+            </form>
+        </div>
+        <!--终止执行按钮-->
+        <div style="float:left; margin-left:10px" id="form-cancel" >
+            <form   style="display:inline-block;" >
+                <input type="button" id="btnCancel" class="btn btn-default" value="终止流程"/>
+            </form>
+        </div>
+    </div>
+    
+    
+{% endblock content %}
+
+{% block js %}
+    {% load static %}
+    <link href="{% static 'bootstrap-switch/css/bootstrap-switch.min.css' %}" rel="stylesheet" type="text/css"/>
+    <script src="{% static 'bootstrap-switch/js/bootstrap-switch.min.js' %}"></script>
+    <script>
+
+        var workflowId = {{ id }};
+        var workflowType = 4;
+        // 审核通过
+        $("#btnPass").click(function () {
+            // 获取form对象，判断输入，通过则提交
+            let comment = $("#remark").val();
+            $(this).button('loading').delay(2500).queue(function () {
+                $(this).button('reset');
+                $(this).dequeue();
+            });
+            $.ajax({
+                type: "post",
+                url: "/api/v1/sysbenchStatus/passed",
+                dataType: "json",
+                data: {
+                    workflow_id: workflowId,
+                    audit_remark: comment
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if ( successMsgSolve(data) ) {
+                        window.location.reload();
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            })
+
+        });
+
+        // 终止
+        $("#btnCancel").click(function () {
+            //获取form对象，判断输入，通过则提交
+            let comment = $("#remark").val();
+            if (comment) {
+                $(this).button('loading').delay(2500).queue(function () {
+                    $(this).button('reset');
+                    $(this).dequeue();
+                });
+
+                $.ajax({
+                    type: "post",
+                    url: "/api/v1/sysbenchStatus/cancel",
+                    dataType: "json",
+                    data: {
+                        workflow_id: workflowId,
+                        audit_remark: comment
+                    },
+                    complete: function () {
+                    },
+                    success: function (data) {
+                        if ( successMsgSolve(data) ) {
+                            window.location.reload();
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        alert(errorThrown);
+                    }
+                })
+            } else {
+                alert("请填写审核备注")
+            }
+        });
+
+
+       // 放入执行队列执行
+        $("#btnExecute").click(function () {
+            //获取form对象，判断输入，通过则提交
+            $(this).button('loading').delay(2500).queue(function () {
+                $(this).button('reset');
+                $(this).dequeue();
+            });
+
+            $.ajax({
+                type: "post",
+                url: "/api/v1/sysbenchStatus/execute",
+                dataType: "json",
+                data: {
+                    workflow_id: workflowId,
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if ( successMsgSolve(data) ) {
+                        window.location.reload();
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            })
+        });
+    </script>
+    <!--TAB控制 -->
+    <script>
+        //tab切换,保留当前激活的标签id
+        $(function () {
+            $("#nav-tabs").on('shown.bs.tab', "li", function (e) {
+                var active_li_id = $(e.target).parents().attr('id');
+                //sessionStorage.setItem('archive_active_li_id', active_li_id);
+                //当前激活的标签id
+                if (active_li_id === 'detail_tab') {
+                } else if (active_li_id === 'logs_tab') {
+                    $.ajax({
+                        type: "get",
+                        url: "/api/v1/sysbenchResult/",
+                        dataType: "json",
+                        data: {
+                            id: workflowId,
+                        },
+                        complete: function () {
+                        },
+                        success: function (data) {
+                            if ( successMsgSolve(data) ) {
+                                if (Object.keys(data.result).length) {
+                                    if (data.result.returncode === 0 ) {
+                                        $("#success_result").removeAttr("hidden");
+                                        
+                                        $("#min")[0].innerHTML = data.result["min"]
+                                        $("#max")[0].innerHTML = data.result["max"]
+                                        $("#avg")[0].innerHTML = data.result["avg"]
+                                        $("#95th")[0].innerHTML = data.result["95th percentile"]
+    
+    
+                                    } else {
+                                        $("#failed_result").removeAttr("hidden");
+                                        let stdout = data.result.stdout;
+                                        let stderr = data.result.stderr;
+                                        if (stdout) {
+                                            stderr.replaceAll("\n","</br>");
+                                            $("#stdout")[0].innerHTML = stdout.replaceAll("\n","</br>");
+                                        } else {
+                                            $("#stdout")[0].innerHTML = "&nbsp";
+                                        }
+                                        if (stderr) {
+                                            $("#stderr")[0].innerHTML = stderr.replaceAll("\n","</br>");
+                                        } else {
+                                            $("#stderr")[0].innerHTML = "&nbsp";
+                                        }
+    
+    
+                                    }
+                                }
+                            }
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            alert(errorThrown);
+                        }
+                    })
+
+                }
+            });
+
+            reflesh_workflow_detail();
+            // $("#workflow_detail_disaply")[0].innerHTML = sqlworkflowStatus_formatter("{{ sysbench_workflow.status }}");
+
+        });
+        function reflesh_workflow_detail() {
+            $.ajax({
+                type: "get",
+                url: "/api/v1/sysbench/",
+                dataType: "json",
+                data: {
+                    id: workflowId,
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.results && data.results.length === 1) {
+                        let workflow_detail = data.results[0];
+                        $("#user_display")[0].innerHTML = workflow_detail.user_display;
+                        $("#instance")[0].innerHTML = workflow_detail.instance.instance_name;
+                        $("#db_name")[0].innerHTML = workflow_detail.db_name;
+                        $("#create_time")[0].innerHTML = workflow_detail.create_time;
+                        $("#resource_group")[0].innerHTML = workflow_detail.resource_group.group_name;
+                        $("#workflow_detail_disaply")[0].innerHTML = sqlworkflowStatus_formatter(workflow_detail.status);
+
+                        $("#sql_content")[0].innerHTML = workflow_detail.sql_content;
+                        $("#sql_params")[0].innerHTML = workflow_detail.sql_params;
+
+                    } else {
+                        alert("存在错误返回： "+JSON.stringify(data));
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+            $.ajax({
+                type: "get",
+                url: "/api/v1/sysbenchDetail/",
+                dataType: "json",
+                data: {
+                    id: workflowId,
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    console.log(data);
+                    if (successMsgSolve(data)) {
+
+                        $("#audit_auth_group")[0].innerHTML = data.data.audit_auth_group;
+                        $("#current_audit_auth_group")[0].innerHTML = data.data.current_audit_auth_group;
+
+                        let is_can_cancel = data.data.is_can_cancel;
+                        let is_can_execute = data.data.is_can_execute;
+                        let is_can_review = data.data.is_can_review;
+
+                        let last_operation_info = data.data.last_operation_info;
+                        
+
+                        if (is_can_review || is_can_cancel) {
+                            $("#form-cancel").removeAttr("hidden");
+                            $("#textarea-remark").removeAttr("hidden");
+                        } else {
+                            $("#form-cancel")[0].setAttribute("hidden","");
+                            $("#textarea-remark")[0].setAttribute("hidden","");
+                        };
+
+                        if (is_can_review) {
+                            $("#form-passed").removeAttr("hidden");
+                        } else {
+                            $("#form-passed")[0].setAttribute("hidden","");
+                        };
+
+                        if (is_can_execute) {
+                            $("#form-execute").removeAttr("hidden");
+                        } else {
+                            $("#form-execute")[0].setAttribute("hidden","");
+                        }
+
+                        if (last_operation_info) {
+                            $("#table_last_operation_info").removeAttr("hidden");
+                            $("#last_operation_info")[0].innerHTML = last_operation_info;
+                            //$("#form-passed")[0].setAttribute("hidden","");
+                            //$("#form-cancel")[0].setAttribute("hidden","");
+                            //$("#form-execute")[0].setAttribute("hidden","");
+                            //$("#textarea-remark")[0].setAttribute("hidden","");
+                        } else {
+                            $("#table_last_operation_info")[0].setAttribute("hidden","");
+                        };
+
+
+                    } else {
+                        alert("存在错误返回： "+JSON.stringify(data));
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            })             
+        };
+
+    </script>
+
+{% endblock %}

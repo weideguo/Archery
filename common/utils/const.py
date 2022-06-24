@@ -18,6 +18,8 @@ class WorkflowDict:
         'sqlreview_display': 'SQL上线申请',
         'archive': 3,
         'archive_display': '数据归档申请',
+        'sysbench': 4,
+        'sysbench_display': 'SQL压测申请',
     }
 
     # 工作流状态，0.待审核 1.审核通过 2.审核不通过 3.审核取消

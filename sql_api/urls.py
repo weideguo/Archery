@@ -3,7 +3,7 @@ from sql_api import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-from . import api_user, api_instance, api_workflow
+from . import api_user, api_instance, api_workflow, api_sysbench
 
 router = routers.DefaultRouter()
 
@@ -36,6 +36,13 @@ urlpatterns = [
     path('v1/workflow/auditlist/', api_workflow.WorkflowAuditList.as_view()),
     path('v1/workflow/execute/', api_workflow.ExecuteWorkflow.as_view()),
     path('v1/workflow/log/', api_workflow.WorkflowLogList.as_view()),
+
+    path('v1/sysbench/', api_sysbench.Sysbench.as_view()),
+    path('v1/sysbenchStatus/<str:opt>', api_sysbench.SysbenchStatus.as_view()),
+    path('v1/sysbenchDetail/', api_sysbench.SysbenchDetail.as_view()),
+    path('v1/sysbenchResult/', api_sysbench.SysbenchResult.as_view()),
+    
+
     path('info', views.info),
     path('debug', views.debug),
     path('do_once/mirage', views.mirage)

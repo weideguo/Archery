@@ -184,6 +184,7 @@ SQL_WORKFLOW_CHOICES = (
     ('workflow_review_pass', _('workflow_review_pass')),
     ('workflow_timingtask', _('workflow_timingtask')),
     ('workflow_queuing', _('workflow_queuing')),
+    ('workflow_queue_timeout', _('workflow_queue_timeout')),
     ('workflow_executing', _('workflow_executing')),
     ('workflow_autoreviewwrong', _('workflow_autoreviewwrong')),
     ('workflow_exception', _('workflow_exception')))
@@ -241,7 +242,7 @@ class SqlWorkflowContent(models.Model):
         verbose_name_plural = u'SQL工单内容'
 
 
-workflow_type_choices = ((1, _('sql_query')), (2, _('sql_review')))
+workflow_type_choices = ((1, _('sql_query')), (2, _('sql_review')), (3, _('archive')), (4, _('sysbench')))
 workflow_status_choices = ((0, '待审核'), (1, '审核通过'), (2, '审核不通过'), (3, '审核取消'))
 
 
@@ -624,6 +625,58 @@ class ArchiveLog(models.Model):
         verbose_name_plural = u'归档日志表'
 
 
+class SysbenchWorkflow(models.Model):
+    """
+    sysbench压测工单表
+    """
+    title = models.CharField('sysbench工单名', max_length=50)
+    resource_group = models.ForeignKey(ResourceGroup, on_delete=models.CASCADE)
+    audit_auth_groups = models.CharField('审批权限组列表', max_length=255, blank=True)
+                    
+    instance = models.ForeignKey(Instance, on_delete=models.CASCADE)
+    db_name = models.CharField('数据库', max_length=64)
+    sql_content = models.TextField('压测的sql')
+    threads = models.SmallIntegerField('并发数')
+    duration = models.SmallIntegerField('压测持续时间')
+    sql_params = models.TextField('压测sql的参数', null=True, blank=True)
+    param_spliter = models.CharField('参数分割符', max_length=5, default=',')
+    params_sync = models.SmallIntegerField('压测时sql参数是否同步变化')
+    status = models.CharField('状态', max_length=50, choices=SQL_WORKFLOW_CHOICES, default='workflow_manreviewing')
+    user_name = models.CharField('发起人', max_length=30, blank=True, default='')
+    user_display = models.CharField('发起人显示名', max_length=50, blank=True, default='')
+    create_time = models.DateTimeField('创建时间', auto_now_add=True)
+    finish_time = models.DateTimeField('结束时间', null=True, blank=True)
+
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        managed = True
+        db_table = 'sysbench_workflow'
+        verbose_name = u'sysbench压测配置表'
+        verbose_name_plural = u'sysbenchL压测配置表'
+
+
+class SysbenchWorkflowContent(models.Model):
+    """
+    sysbench压测的结果
+    """
+    sysbench_workflow = models.OneToOneField(SysbenchWorkflow, on_delete=models.CASCADE, primary_key=True)
+    result = models.TextField('执行结果的JSON格式', blank=True)
+
+    def __str__(self):
+        return self.workflow.title
+
+    class Meta:
+        managed = True
+        db_table = 'sysbench_workflow_content'
+        verbose_name = u'sysbench压测的结果'
+        verbose_name_plural = u'sysbench压测的结果'
+
+
+
+
 class Config(models.Model):
     """
     配置信息表
@@ -726,6 +779,7 @@ class Permission(models.Model):
             ('menu_binlog2sql', '菜单 Binlog2SQL'),
             ('menu_my2sql', '菜单 My2SQL'),
             ('menu_schemasync', '菜单 SchemaSync'),
+            ('menu_sysbench', '菜单 sysbench'),
             ('menu_system', '菜单 系统管理'),
             ('menu_document', '菜单 相关文档'),
             ('menu_openapi', '菜单 OpenAPI'),
@@ -755,6 +809,8 @@ class Permission(models.Model):
             ('archive_apply', '提交归档申请'),
             ('archive_review', '审核归档申请'),
             ('archive_mgt', '管理归档申请'),
+            ('sysbench_apply', '提交压测申请'),
+            ('sysbench_review', '审核压测申请'),
             ('audit_user','审计权限'),
             ('query_download', '在线查询下载权限'),
         )

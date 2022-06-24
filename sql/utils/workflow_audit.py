@@ -6,7 +6,7 @@ from sql.utils.resource_group import user_groups, auth_group_users
 from sql.utils.sql_review import is_auto_review
 from common.utils.const import WorkflowDict
 from sql.models import WorkflowAudit, WorkflowAuditDetail, WorkflowAuditSetting, WorkflowLog, ResourceGroup, \
-    SqlWorkflow, QueryPrivilegesApply, Users, ArchiveConfig
+    SqlWorkflow, QueryPrivilegesApply, Users, ArchiveConfig, SysbenchWorkflow
 from common.config import SysConfig
 
 
@@ -44,6 +44,15 @@ class Audit(object):
             workflow_remark = ''
         elif workflow_type == WorkflowDict.workflow_type['archive']:
             workflow_detail = ArchiveConfig.objects.get(pk=workflow_id)
+            workflow_title = workflow_detail.title
+            group_id = workflow_detail.resource_group.group_id
+            group_name = workflow_detail.resource_group.group_name
+            create_user = workflow_detail.user_name
+            create_user_display = workflow_detail.user_display
+            audit_auth_groups = workflow_detail.audit_auth_groups
+            workflow_remark = ''
+        elif workflow_type == WorkflowDict.workflow_type['sysbench']:
+            workflow_detail = SysbenchWorkflow.objects.get(pk=workflow_id)
             workflow_title = workflow_detail.title
             group_id = workflow_detail.resource_group.group_id
             group_name = workflow_detail.resource_group.group_name
@@ -333,14 +342,17 @@ class Audit(object):
             except Exception:
                 raise Exception('当前审批auth_group_id不存在，请检查并清洗历史数据')
             if auth_group_users([audit_auth_group], group_id).filter(id=user.id).exists() or user.is_superuser == 1:
-                if workflow_type == 1:
+                if workflow_type == WorkflowDict.workflow_type['query']:
                     if user.has_perm('sql.query_review'):
                         result = True
-                elif workflow_type == 2:
+                elif workflow_type == WorkflowDict.workflow_type['sqlreview']:
                     if user.has_perm('sql.sql_review'):
                         result = True
-                elif workflow_type == 3:
+                elif workflow_type == WorkflowDict.workflow_type['archive']:
                     if user.has_perm('sql.archive_review'):
+                        result = True
+                elif workflow_type == WorkflowDict.workflow_type['sysbench']:
+                    if user.has_perm('sql.sysbench_review'):
                         result = True
         return result
 

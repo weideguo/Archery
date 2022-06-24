@@ -26,3 +26,11 @@ class IsOwner(permissions.BasePermission):
             return False
 
         return engineer == request.user.username
+
+
+class BasePermission(permissions.BasePermission):
+    """
+    最基础权限 只要求登录
+    """
+    def has_permission(self, request, view):
+        return request.user.id

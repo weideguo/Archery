@@ -33,6 +33,8 @@
                                     {{ WorkflowDict.workflow_type.query_display }}</option>
                                 <option value="{{ WorkflowDict.workflow_type.archive }}">
                                     {{ WorkflowDict.workflow_type.archive_display }}</option>
+                                <option value="{{ WorkflowDict.workflow_type.sysbench }}">
+                                    {{ WorkflowDict.workflow_type.sysbench_display }}</option>
                             </select>
                         </div>
                         <h5 class="control-label text-bold">组：</h5>
@@ -740,6 +742,17 @@
                                            key="my2sql"
                                            value="{{ config.my2sql }}"
                                            placeholder="my2sql调用路径，类似/opt/archery/src/plugins/my2sql">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="sysbench"
+                                       class="col-sm-4 control-label">sysbench</label>
+                                <div class="col-sm-5">
+                                    <input type="text" class="form-control"
+                                           id="sysbench"
+                                           key="sysbench"
+                                           value="{{ config.sysbench }}"
+                                           placeholder="sysbench调用路径，类似/opt/archery/src/plugins/sysbench">
                                 </div>
                             </div>
                             <div class="form-group">
