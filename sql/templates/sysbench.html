@@ -12,7 +12,7 @@
                 {% endfor %}
             </select>
         </div>
-        <div class='form-group'>
+        <div class="form-group">
             <div id="reservation" class="form-control"
                  style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
                 <i class="fa fa-calendar"></i>&nbsp;
@@ -66,18 +66,18 @@
     <script>
         // 初始化时间控件
         $(function () {
-            let start = moment().subtract(29, 'days');
+            let start = moment().subtract(29, "days");
             let end = moment();
 
             function cb(start, end) {
                 if (start.isValid() && end.isValid()) {
-                    $('#reservation span').html(start.format('YYYY-MM-DD') + ' - ' + end.format('YYYY-MM-DD'));
+                    $("#reservation span").html(start.format("YYYY-MM-DD") + " - " + end.format("YYYY-MM-DD"));
                 } else {
-                    $('#reservation span').html('全部数据');
+                    $("#reservation span").html("全部数据");
                 }
             }
 
-            $('#reservation').daterangepicker({
+            $("#reservation").daterangepicker({
                 startDate: start,
                 endDate: end,
                 showDropdowns: true,
@@ -96,14 +96,14 @@
                 },
                 ranges: {
                     "全部": [null, null],
-                    "今日": [moment().startOf('day'), moment()],
-                    "昨日": [moment().subtract('days', 1).startOf('day'), moment().subtract('days', 1).endOf('day')],
-                    "最近7日": [moment().subtract('days', 6), moment()],
-                    "最近30日": [moment().subtract('days', 29), moment()],
+                    "今日": [moment().startOf("day"), moment()],
+                    "昨日": [moment().subtract("days", 1).startOf("day"), moment().subtract("days", 1).endOf("day")],
+                    "最近7日": [moment().subtract("days", 6), moment()],
+                    "最近30日": [moment().subtract("days", 29), moment()],
                     "本月": [moment().startOf("month"), moment().endOf("month")],
                     "上个月": [moment().subtract(1, "month").startOf("month"), moment().subtract(1, "month").endOf("month")]
                 }
-            }, cb).on('apply.daterangepicker', function (ev, picker) {
+            }, cb).on("apply.daterangepicker", function (ev, picker) {
                 sysbench_apply_list()
             });
             cb(start, end);
@@ -117,9 +117,9 @@
 
         //获取申请列表
         function sysbench_apply_list() {
-            $('#archive-list').bootstrapTable('destroy').bootstrapTable({
+            $("#archive-list").bootstrapTable("destroy").bootstrapTable({
                 escape: true,
-                method: 'get',
+                method: "get",
                 contentType: "application/x-www-form-urlencoded",
                 url: "/api/v1/sysbench/",
                 striped: true,                      //是否显示行间隔色
@@ -141,21 +141,21 @@
                 showToggle: true,                   //是否显示详细视图和列表视图的切换按钮
                 cardView: false,                    //是否显示详细视图
                 detailView: false,                  //是否显示父子表
-                locale: 'zh-CN',                    //本地化
+                locale: "zh-CN",                    //本地化
                 toolbar: "#toolbar",               //指明自定义的toolbar
-                queryParamsType: 'limit',
+                queryParamsType: "limit",
                 //请求服务数据时所传参数
                 queryParams:
                     function (params) {
                         let page = parseInt(params.offset/params.limit)+1;
-                        let start_date = $("#reservation").data('daterangepicker').startDate;
-                        let end_date = $("#reservation").data('daterangepicker').endDate;
+                        let start_date = $("#reservation").data("daterangepicker").startDate;
+                        let end_date = $("#reservation").data("daterangepicker").endDate;
                         if (start_date.isValid() && end_date.isValid()) {
-                            start_date = start_date.format('YYYY-MM-DD HH:mm:ss');
-                            end_date = end_date.format('YYYY-MM-DD HH:mm:ss');
+                            start_date = start_date.format("YYYY-MM-DD HH:mm:ss");
+                            end_date = end_date.format("YYYY-MM-DD HH:mm:ss");
                         } else {
-                            start_date = '';
-                            end_date = ''
+                            start_date = "";
+                            end_date = ""
                         }
                         return {
                             // offset从0开始
@@ -168,16 +168,16 @@
                         }
                     },
                 columns: [{
-                    title: 'ID',
-                    field: 'id'
+                    title: "ID",
+                    field: "id"
                 }, {
-                    title: '工单名称',
-                    field: 'title',
+                    title: "工单名称",
+                    field: "title",
                     formatter: function (value, row, index) {
-                        var span = document.createElement('span');
-                        span.setAttribute('title', value);
+                        var span = document.createElement("span");
+                        span.setAttribute("title", value);
                         if (value.length > 10) {
-                            span.innerHTML = "<a href=\"/sysbench/" + row.id + "/\">" + value.substr(0, 10) + '...';
+                            span.innerHTML = "<a href=\"/sysbench/" + row.id + "/\">" + value.substr(0, 10) + "...";
                             +"</a>";
                         } else {
                             span.innerHTML = "<a href=\"/sysbench/" + row.id + "/\">" + value + "</a>";
@@ -185,40 +185,40 @@
                         return span.outerHTML;
                     }
                 }, {
-                    title: '实例',
-                    field: 'instance.instance_name'
+                    title: "实例",
+                    field: "instance.instance_name"
                 }, {
-                    title: '组',
-                    field: 'resource_group.group_name'
+                    title: "组",
+                    field: "resource_group.group_name"
                 }, {
-                    title: '工单状态',
-                    field: 'status',
+                    title: "工单状态",
+                    field: "status",
                     formatter: function (value, row, index) {
                         return sqlworkflowStatus_formatter(value)
                     },
                 }, {
-                    title: '申请人',
-                    field: 'user_display'
+                    title: "申请人",
+                    field: "user_display"
                 }, {
-                    title: '申请时间',
-                    field: 'create_time'
+                    title: "申请时间",
+                    field: "create_time"
                 },  {
-                    title: 'sql_content',
-                    field: 'sql_content',
+                    title: "sql_content",
+                    field: "sql_content",
                     visible: false // 默认不显示
                 }, {
-                    title: 'sql_params',
-                    field: 'sql_params',
+                    title: "sql_params",
+                    field: "sql_params",
                     visible: false // 默认不显示
                 }, {
-                    title: '并发数',
-                    field: 'threads',
+                    title: "并发数",
+                    field: "threads",
                 }, {
-                    title: '持续秒',
-                    field: 'duration',
+                    title: "持续秒",
+                    field: "duration",
                 }, {
-                    title: '操作',
-                    field: 'operation',
+                    title: "操作",
+                    field: "operation",
                     formatter: function (value, row, index) {
                         return "<button class=\"btn btn-info btn-xs\" workflow_id=\"" + row.id + "\"\n" + "onclick=\"getLog(this)\" >操作日志\n" + "</button>"
                     }
@@ -256,8 +256,8 @@
                 },
                 success: function (data) {
                     //初始化table
-                    $('#logs').modal('show');
-                    $('#log-list').bootstrapTable('destroy').bootstrapTable({
+                    $("#logs").modal("show");
+                    $("#log-list").bootstrapTable("destroy").bootstrapTable({
                         escape: true,
                         striped: true,                      //是否显示行间隔色
                         cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
@@ -278,20 +278,20 @@
                         showToggle: false,                   //是否显示详细视图和列表视图的切换按钮
                         cardView: false,                    //是否显示详细视图
                         detailView: false,                  //是否显示父子表
-                        locale: 'zh-CN',                    //本地化
+                        locale: "zh-CN",                    //本地化
                         data: data.rows,
                         columns: [{
-                            title: '操作',
-                            field: 'operation_type_desc'
+                            title: "操作",
+                            field: "operation_type_desc"
                         }, {
-                            title: '操作人',
-                            field: 'operator_display'
+                            title: "操作人",
+                            field: "operator_display"
                         }, {
-                            title: '操作时间',
-                            field: 'operation_time'
+                            title: "操作时间",
+                            field: "operation_time"
                         }, {
-                            title: '操作信息',
-                            field: 'operation_info'
+                            title: "操作信息",
+                            field: "operation_info"
                         }],
                         onLoadSuccess: function () {
                         },

@@ -42,7 +42,7 @@ def can_cancel(user, workflow_id):
     """
     result = False
     workflow_detail = SysbenchWorkflow.objects.get(id=workflow_id)
-    if workflow_detail.status in ['workflow_abort','workflow_finish','workflow_exception','workflow_executing','workflow_queue_timeout']:
+    if workflow_detail.status in ['workflow_abort','workflow_finish','workflow_exception','workflow_queue_timeout']:
         return False, '当前工单不在可取消状态'
 
     group_ids = [group.group_id for group in user_groups(user)]

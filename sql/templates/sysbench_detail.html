@@ -76,15 +76,14 @@
             <hr/>
             <div class="form-horizontal">
                 <div class="form-group form-inline">
-                    <label class="col-sm-2 control-label">SQL</label>
-                    <div class="col-sm-10">
+                    <label class="col-sm-1 control-label">SQL</label>
+                    <div class="col-sm-11">
                         <p class="form-control-static" id="sql_content"></p>
                     </div>
-                    <label class="col-sm-2 control-label">SQL参数</label>
-                    <div class="col-sm-10">
-                        <p class="form-control-static" id="sql_params"></p>
+                    <label class="col-sm-1 control-label">SQL参数</label>
+                    <div class="col-sm-11">
+                        <p class="form-control-static" id="sql_params" style="word-break:break-all;"></p>
                     </div>
-
                 </div>
             </div>
 
@@ -111,26 +110,25 @@
 
         </div>
         <!-- 压测日志-->
-        <div id="logs" role="tabpanel" class="tab-pane fade table-responsive">
+        <div id="logs" role="tabpanel" class="panel-body tab-pane fade table-responsive">
             <div class="form-horizontal">
                 <div class="form-inline" id="success_result" hidden>
-                    <br/>
                     <h4><b>执行结果分析（毫秒）</b></h4>
                     <hr/>
-                    <label class="col-sm-2 control-label">最小</label>
-                    <div class="col-sm-10">
+                    <label class="col-sm-6 control-label">最小</label>
+                    <div class="col-sm-6">
                         <p id="min" class="form-control-static"></p>
                     </div>
-                    <label class="col-sm-2 control-label">最大</label>
-                    <div class="col-sm-10">
+                    <label class="col-sm-6 control-label">最大</label>
+                    <div class="col-sm-6">
                         <p id="max" class="form-control-static"></p>
                     </div>
-                    <label class="col-sm-2 control-label">平均</label>
-                    <div class="col-sm-10">
+                    <label class="col-sm-6 control-label">平均</label>
+                    <div class="col-sm-6">
                         <p id="avg" class="form-control-static"></p>
                     </div>
-                    <label class="col-sm-2 control-label">95%</label>
-                    <div class="col-sm-10">
+                    <label class="col-sm-6 control-label">95%</label>
+                    <div class="col-sm-6">
                         <p id="95th" class="form-control-static"></p>
                     </div>
 
@@ -138,13 +136,13 @@
 
                 <div class="form-inline" id="failed_result" hidden>
                     <h4><b>执行失败</b></h4>
-                    </hr>
-                    <label class="col-sm-2 control-label">stdout</label>
-                    <div class="col-sm-10">
+                    <hr/>
+                    <label class="col-sm-1 control-label">stdout</label>
+                    <div class="col-sm-11">
                         <p id="stdout"class="form-control-static"></p>
                     </div>
-                    <label class="col-sm-2 control-label">stderr</label>
-                    <div class="col-sm-10">
+                    <label class="col-sm-1 control-label">stderr</label>
+                    <div class="col-sm-11">
                         <p id="stderr" class="form-control-static"></p>
                     </div>
                 </div>
@@ -199,8 +197,8 @@
         $("#btnPass").click(function () {
             // 获取form对象，判断输入，通过则提交
             let comment = $("#remark").val();
-            $(this).button('loading').delay(2500).queue(function () {
-                $(this).button('reset');
+            $(this).button("loading").delay(2500).queue(function () {
+                $(this).button("reset");
                 $(this).dequeue();
             });
             $.ajax({
@@ -230,8 +228,8 @@
             //获取form对象，判断输入，通过则提交
             let comment = $("#remark").val();
             if (comment) {
-                $(this).button('loading').delay(2500).queue(function () {
-                    $(this).button('reset');
+                $(this).button("loading").delay(2500).queue(function () {
+                    $(this).button("reset");
                     $(this).dequeue();
                 });
 
@@ -246,9 +244,8 @@
                     complete: function () {
                     },
                     success: function (data) {
-                        if ( successMsgSolve(data) ) {
-                            window.location.reload();
-                        }
+                        successMsgSolve(data);
+                        window.location.reload();
                     },
                     error: function (XMLHttpRequest, textStatus, errorThrown) {
                         alert(errorThrown);
@@ -263,8 +260,8 @@
        // 放入执行队列执行
         $("#btnExecute").click(function () {
             //获取form对象，判断输入，通过则提交
-            $(this).button('loading').delay(2500).queue(function () {
-                $(this).button('reset');
+            $(this).button("loading").delay(2500).queue(function () {
+                $(this).button("reset");
                 $(this).dequeue();
             });
 
@@ -292,12 +289,12 @@
     <script>
         //tab切换,保留当前激活的标签id
         $(function () {
-            $("#nav-tabs").on('shown.bs.tab', "li", function (e) {
-                var active_li_id = $(e.target).parents().attr('id');
-                //sessionStorage.setItem('archive_active_li_id', active_li_id);
+            $("#nav-tabs").on("shown.bs.tab", "li", function (e) {
+                var active_li_id = $(e.target).parents().attr("id");
+                //sessionStorage.setItem("archive_active_li_id", active_li_id);
                 //当前激活的标签id
-                if (active_li_id === 'detail_tab') {
-                } else if (active_li_id === 'logs_tab') {
+                if (active_li_id === "detail_tab") {
+                } else if (active_li_id === "logs_tab") {
                     $.ajax({
                         type: "get",
                         url: "/api/v1/sysbenchResult/",
@@ -347,10 +344,7 @@
 
                 }
             });
-
             reflesh_workflow_detail();
-            // $("#workflow_detail_disaply")[0].innerHTML = sqlworkflowStatus_formatter("{{ sysbench_workflow.status }}");
-
         });
         function reflesh_workflow_detail() {
             $.ajax({
@@ -373,8 +367,11 @@
                         $("#workflow_detail_disaply")[0].innerHTML = sqlworkflowStatus_formatter(workflow_detail.status);
 
                         $("#sql_content")[0].innerHTML = workflow_detail.sql_content;
-                        $("#sql_params")[0].innerHTML = workflow_detail.sql_params;
-
+                        let sql_params = "";
+                        JSON.parse(workflow_detail.sql_params).forEach((k,i) => {
+                            sql_params += k+"</br>"
+                        });
+                        $("#sql_params")[0].innerHTML = sql_params;
                     } else {
                         alert("存在错误返回： "+JSON.stringify(data));
                     }
@@ -429,10 +426,6 @@
                         if (last_operation_info) {
                             $("#table_last_operation_info").removeAttr("hidden");
                             $("#last_operation_info")[0].innerHTML = last_operation_info;
-                            //$("#form-passed")[0].setAttribute("hidden","");
-                            //$("#form-cancel")[0].setAttribute("hidden","");
-                            //$("#form-execute")[0].setAttribute("hidden","");
-                            //$("#textarea-remark")[0].setAttribute("hidden","");
                         } else {
                             $("#table_last_operation_info")[0].setAttribute("hidden","");
                         };

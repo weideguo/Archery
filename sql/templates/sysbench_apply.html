@@ -254,20 +254,20 @@
         function validateForm(element, limit=0) {
             var result = true;
             let i = 0;
-            let required_element = element.find('[required]');
+            let required_element = element.find("[required]");
             if (limit) {
                 required_element = required_element.slice(0,limit);
             }
             required_element.each(
                 function () {
                     var fieldElement = $(this);
-                    //如果为null则设置为''
-                    var value = fieldElement.val() || '';
+                    //如果为null则设置为""
+                    var value = fieldElement.val() || "";
                     if (value) {
                         value = value.trim();
                     }
-                    if (!value || value === fieldElement.attr('data-placeholder')) {
-                        alert(fieldElement.attr('data-placeholder'));
+                    if (!value || value === fieldElement.attr("data-placeholder")) {
+                        alert(fieldElement.attr("data-placeholder"));
                         result = false;
                         return result;
                     }
@@ -290,17 +290,17 @@
                 },
                 success: function (data) {
                     if (data.status === 0) {
-                        let result = data['data'];
+                        let result = data["data"];
                         $("#instance_name").empty();
                         for (let i = 0; i < result.length; i++) {
-                            let instance = "<option value=\"" + result[i]['instance_name'] + "\">" + result[i]['instance_name'] + "</option>";
+                            let instance = "<option value=\"" + result[i]["instance_name"] + "\">" + result[i]["instance_name"] + "</option>";
                             $("#instance_name").append(instance);
                         }
-                        $('#instance_name').selectpicker('render');
-                        $('#instance_name').selectpicker('refresh');
+                        $("#instance_name").selectpicker("render");
+                        $("#instance_name").selectpicker("refresh");
                         $("#db_name").empty();
-                        $('#db_name').selectpicker('render');
-                        $('#db_name').selectpicker('refresh');
+                        $("#db_name").selectpicker("render");
+                        $("#db_name").selectpicker("refresh");
                     } else {
                         alert(data.msg);
                     }
@@ -322,8 +322,8 @@
                 success: function (data) {
                     if (data.status === 0) {
                         var result = data.data;
-                        $("#workflow_auditors").val(result['auditors']);
-                        $("#workflow_auditors_display").text(result['auditors_display']);
+                        $("#workflow_auditors").val(result["auditors"]);
+                        $("#workflow_auditors_display").text(result["auditors_display"]);
                         $("#div-workflow_auditors").show();
                     } else {
                         alert(data.msg);
@@ -356,8 +356,8 @@
                             var name = "<option value=\"" + result[i] + "\">" + result[i] + "</option>";
                             $("#db_name").append(name);
                         }
-                        $('#db_name').selectpicker('render');
-                        $('#db_name').selectpicker('refresh');
+                        $("#db_name").selectpicker("render");
+                        $("#db_name").selectpicker("refresh");
                     } else {
                         alert(data.msg);
                     }
@@ -370,7 +370,12 @@
         // 获取SQL参数
         $("#sql_params").click(function () {
             let formSysbench = $("#form-sysbench");
-            if ( validateForm(formSysbench) ) {
+            let isPass = 1;
+            if ($("#threads").val() > 200 ) {
+                isPass = 0;
+                alert("sysbench线程数不应该大于200");
+            }
+            if ( validateForm(formSysbench) && isPass) {
                 let sqlParamsRaw = $("#sql").val().match(/\?/g)
                 if (sqlParamsRaw === null) {
                     sqlParamsLen = 0
@@ -383,11 +388,11 @@
                         $("#form-param"+i).removeAttr("hidden");
                     }
                     $("#sql")[0].setAttribute("disabled","disabled");
-                    $("#commit_bench").removeClass('disabled');
-                    $("#commit_bench").prop('disabled', false);
+                    $("#commit_bench").removeClass("disabled");
+                    $("#commit_bench").prop("disabled", false);
             
-                    $("#sql_params").addClass('disabled');
-                    $("#sql_params").prop('disabled', true);
+                    $("#sql_params").addClass("disabled");
+                    $("#sql_params").prop("disabled", true);
                 } else {
                     alert("sql压测参数暂时不支持超过20个");
                 };
@@ -444,10 +449,10 @@
                 }
 
                 if (!notEqualIndex) {
-                    $("#sql_params").removeClass('disabled');
-                    $("#sql_params").prop('disabled', false);
-                    $("#commit_bench").addClass('disabled');
-                    $("#commit_bench").prop('disabled', true);         
+                    $("#sql_params").removeClass("disabled");
+                    $("#sql_params").prop("disabled", false);
+                    $("#commit_bench").addClass("disabled");
+                    $("#commit_bench").prop("disabled", true);         
                     $("#sql")[0].removeAttribute("disabled");
                     
                     sqlParams = JSON.stringify(sqlParams)    
@@ -481,9 +486,7 @@
                                 // alert("插入成功");
                                 let workflowId = data.data.id;
                                 document.location.href="/sysbench/"+workflowId
-                            } else {
-                                alert("返回值异常，请确认后端插入数据库情况");
-                            }
+                            } 
                         },
                         error: function (XMLHttpRequest, textStatus, errorThrown) {
                             alert(errorThrown);
@@ -499,8 +502,8 @@
 
         $(document).ready(function () {
             // 禁用提交按钮，点击获取SQL参数后再激活
-            $("#commit_bench").addClass('disabled');
-            $("#commit_bench").prop('disabled', true);
+            $("#commit_bench").addClass("disabled");
+            $("#commit_bench").prop("disabled", true);
         });
 
 

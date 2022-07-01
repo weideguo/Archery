@@ -5,6 +5,7 @@ import json
 import time
 import logging
 import traceback
+import subprocess
 from copy import deepcopy
 
 import MySQLdb
@@ -152,8 +153,8 @@ class SysbenchStatus(generics.ListAPIView):
 
             workflow_detail = SysbenchWorkflow.objects.get(id=workflow_id)
 
-            if not workflow_detail.status or not workflow_detail.status in ['workflow_manreviewing','workflow_review_pass','workflow_timingtask','workflow_queuing']:
-                return Response({'status':1,'msg':'当前工单不能终止，请刷新页面'})
+            #if not workflow_detail.status or not workflow_detail.status in ['workflow_manreviewing','workflow_review_pass','workflow_timingtask','workflow_queuing']:
+            #    return Response({'status':1,'msg':'当前工单不能终止，请刷新页面'})
 
             try:
                 with transaction.atomic():
@@ -201,9 +202,28 @@ class SysbenchStatus(generics.ListAPIView):
                     lock_prefix = 'archery-sysbench-{}-'.format(str(workflow_detail.instance_id))
                     lock_name = '{}{}'.format(lock_prefix, str(workflow_id))   
                     redis_conn.delete(lock_name)
+
+                    # 杀死在运行的sysbench进程
+                    r = SysbenchWorkflowContent.objects.get(sysbench_workflow_id=workflow_id)
+                    pid = r.pid
+                    result = r.result
+                    returncode = 0
+                    if pid and not result:
+                        cmd_args = f"kill -9 {pid}"
+                        p = subprocess.Popen(cmd_args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                        stdout = p.stdout.read()
+                        stderr = p.stderr.read()
+
+                        p.communicate()
+                        returncode = p.returncode 
+
                     # 将流程状态修改为人工终止流程
                     workflow_detail.status = 'workflow_abort'
                     workflow_detail.save()
+
+                    if returncode:
+                        return Response({'status':1, 'msg':f'工单状态已经修改，但终止sysbench进程失败，请刷新页面\n{stdout}\n{stderr}'})
+
             except Exception as msg:
                 logger.error(f"取消压测工单报错，错误信息：{traceback.format_exc()}")
                 return Response({'status':1, 'msg':str(msg)})
@@ -296,7 +316,7 @@ class SysbenchResult(generics.ListAPIView):
         workflow_id = int(request.GET['id'])
         try:
             _result = SysbenchWorkflowContent.objects.filter(sysbench_workflow_id=workflow_id).values('result')
-            if len(_result):
+            if len(_result) and 'result' in _result[0] and _result[0]["result"]:
                 result = json.loads(_result[0]["result"])
             else:
                 result = {}
@@ -392,6 +412,10 @@ def sysbench_execute(workflow_id, user):
     logger.debug(cmd_args)
     # cmd_args 插入数据库？
 
+    pid = p.pid
+    SysbenchWorkflowContent(sysbench_workflow_id=workflow_id, pid=pid).save()
+
+
     stdout = p.stdout.read()
     stderr = p.stderr.read()
 
@@ -427,22 +451,23 @@ def sysbench_execute_callback(task):
     execute_status = task.result[1] 
     operation_info = task.result[2] 
     sysbench_content = task.result[3]       
-    workflow_id = task.args[0]         
-    with transaction.atomic():
-        # 插入执行结果 更改执行状态
-        SysbenchWorkflow.objects.filter(id=workflow_id).update(status=execute_status, finish_time=task.stopped )
-        if sysbench_content:
-            sysbench_workflow_content = SysbenchWorkflowContent(sysbench_workflow_id=workflow_id, result=json.dumps(sysbench_content))
-            sysbench_workflow_content.save()
-
-    audit_id = Audit.detail_by_workflow_id(workflow_id=workflow_id, workflow_type=workflow_type).audit_id
-    Audit.add_log(audit_id=audit_id,
-                    operation_type=6,
-                    operation_type_desc='执行结束',
-                    operation_info=operation_info,
-                    operator='',
-                    operator_display='系统'
-                )
+    workflow_id = task.args[0]
+    # 可能存在人工终止，则不再更改状态
+    if SysbenchWorkflow.objects.get(id=workflow_id).status not in ['workflow_abort']:         
+        with transaction.atomic():
+            # 插入执行结果 更改执行状态
+            SysbenchWorkflow.objects.filter(id=workflow_id).update(status=execute_status, finish_time=task.stopped )
+            if sysbench_content:
+                SysbenchWorkflowContent.objects.filter(sysbench_workflow_id=workflow_id).update(result=json.dumps(sysbench_content))            
+        
+        audit_id = Audit.detail_by_workflow_id(workflow_id=workflow_id, workflow_type=workflow_type).audit_id
+        Audit.add_log(audit_id=audit_id,
+                        operation_type=6,
+                        operation_type_desc='执行结束',
+                        operation_info=operation_info,
+                        operator='',
+                        operator_display='系统'
+                    )
 
 
 def ajax_request_transfer(data):

@@ -663,16 +663,17 @@ class SysbenchWorkflowContent(models.Model):
     sysbench压测的结果
     """
     sysbench_workflow = models.OneToOneField(SysbenchWorkflow, on_delete=models.CASCADE, primary_key=True)
+    pid = models.IntegerField('pid')
     result = models.TextField('执行结果的JSON格式', blank=True)
 
     def __str__(self):
-        return self.workflow.title
+        return self.sysbench_workflow.title
 
     class Meta:
         managed = True
         db_table = 'sysbench_workflow_content'
-        verbose_name = u'sysbench压测的结果'
-        verbose_name_plural = u'sysbench压测的结果'
+        verbose_name = u'sysbench压测结果表'
+        verbose_name_plural = u'sysbench压测结果表'
 
 
 
