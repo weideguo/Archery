@@ -204,18 +204,21 @@ class SysbenchStatus(generics.ListAPIView):
                     redis_conn.delete(lock_name)
 
                     # 杀死在运行的sysbench进程
-                    r = SysbenchWorkflowContent.objects.get(sysbench_workflow_id=workflow_id)
-                    pid = r.pid
-                    result = r.result
                     returncode = 0
-                    if pid and not result:
-                        cmd_args = f"kill -9 {pid}"
-                        p = subprocess.Popen(cmd_args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                        stdout = p.stdout.read()
-                        stderr = p.stderr.read()
+                    try:
+                        r = SysbenchWorkflowContent.objects.get(sysbench_workflow_id=workflow_id)
+                        pid = r.pid
+                        result = r.result
+                        if pid and not result:
+                            cmd_args = f"kill -9 {pid}"
+                            p = subprocess.Popen(cmd_args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                            stdout = p.stdout.read()
+                            stderr = p.stderr.read()
 
-                        p.communicate()
-                        returncode = p.returncode 
+                            p.communicate()
+                            returncode = p.returncode
+                    except:
+                        pass
 
                     # 将流程状态修改为人工终止流程
                     workflow_detail.status = 'workflow_abort'
