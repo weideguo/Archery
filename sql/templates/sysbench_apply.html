@@ -371,9 +371,13 @@
         $("#sql_params").click(function () {
             let formSysbench = $("#form-sysbench");
             let isPass = 1;
-            if ($("#threads").val() > 200 ) {
+            if ( $("#threads").val() > 200 ) {
                 isPass = 0;
                 alert("sysbench线程数不应该大于200");
+            }
+            if ( $("#sql").val().match(/--/g) || $("#sql").val().match(/#/g) ) {
+                isPass = 0;
+                alert("SQL中不应该存在注释字符'--'或'#'");
             }
             if ( validateForm(formSysbench) && isPass) {
                 let sqlParamsRaw = $("#sql").val().match(/\?/g)
