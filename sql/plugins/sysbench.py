@@ -107,7 +107,7 @@ class Sysbench(Plugin):
             stmt = {}
             param = {}
     
-            stmt = con:prepare(string.format(stmt_def[1]))
+            stmt = con:prepare(stmt_def[1])
             
             local nparam = #stmt_def - 1
             
