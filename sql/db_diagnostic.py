@@ -31,7 +31,7 @@ def process(request):
 
     query_engine = get_engine(instance=instance)
     query_result = None
-    if instance.db_type == "mysql":
+    if instance.db_type in ["mysql", "doris"]:
         query_result = query_engine.processlist(command_type)
 
     elif instance.db_type == "mongo":
@@ -74,7 +74,7 @@ def create_kill_session(request):
 
     result = {"status": 0, "msg": "ok", "data": []}
     query_engine = get_engine(instance=instance)
-    if instance.db_type == "mysql":
+    if instance.db_type in ["mysql", "doris"]:
         result["data"] = query_engine.get_kill_command(json.loads(thread_ids))
     elif instance.db_type == "mongo":
         kill_command = query_engine.get_kill_command(json.loads(thread_ids))
@@ -110,7 +110,7 @@ def kill_session(request):
 
     engine = get_engine(instance=instance)
     r = None
-    if instance.db_type == "mysql":
+    if instance.db_type in ["mysql", "doris"]:
         r = engine.kill(json.loads(thread_ids))
     elif instance.db_type == "mongo":
         r = engine.kill_op(json.loads(thread_ids))
@@ -146,7 +146,7 @@ def tablespace(request):
         return HttpResponse(json.dumps(result), content_type="application/json")
 
     query_engine = get_engine(instance=instance)
-    if instance.db_type == "mysql":
+    if instance.db_type in ["mysql", "doris"]:
         query_result = query_engine.tablespace(offset, limit)
     elif instance.db_type == "oracle":
         query_result = query_engine.tablespace(offset, limit)

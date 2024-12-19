@@ -380,3 +380,13 @@ def get_exec_sqlitem_list(reviewResult, db_name):
             )
         )
     return list
+
+
+def split_sql(db_name=None, sql=""):
+    """切分语句"""
+    sql = sqlparse.format(sql, strip_comments=True)
+    sql_result = []
+    if db_name:
+        sql_result += [f"""USE {db_name}"""]
+    sql_result += sqlparse.split(sql)
+    return sql_result

@@ -14,18 +14,9 @@ from . import EngineBase
 from .models import ResultSet, ReviewSet, ReviewResult
 
 from sql.models import SqlWorkflow
+from sql.utils.sql_utils import split_sql
 
 logger = logging.getLogger("default")
-
-
-def split_sql(db_name=None, sql=""):
-    """切分语句，追加到检测结果中，默认全部检测通过"""
-    sql = sqlparse.format(sql, strip_comments=True)
-    sql_result = []
-    if db_name:
-        sql_result += [f"""USE {db_name}"""]
-    sql_result += sqlparse.split(sql)
-    return sql_result
 
 
 def dummy_audit(full_sql: str, sql_list) -> ReviewSet:

@@ -12,7 +12,7 @@ from MySQLdb.constants import FIELD_TYPE
 from schemaobject.connection import build_database_url
 
 from sql.engines.goinception import GoInceptionEngine
-from sql.utils.sql_utils import get_syntax_type, remove_comments
+from sql.utils.sql_utils import get_syntax_type, remove_comments, split_sql
 from . import EngineBase
 from .models import ResultSet, ReviewResult, ReviewSet
 from sql.utils.data_masking import data_masking
@@ -71,6 +71,7 @@ class MysqlEngine(EngineBase):
         super().__init__(instance=instance)
         self.config = SysConfig()
         self.inc_engine = GoInceptionEngine()
+        self.default_max_execution_time = 0
 
     def get_connection(self, db_name=None):
         # https://stackoverflow.com/questions/19256155/python-mysqldb-returning-x01-for-bit-values
@@ -498,7 +499,9 @@ class MysqlEngine(EngineBase):
     ):
         """返回 ResultSet"""
         result_set = ResultSet(full_sql=sql)
-        max_execution_time = kwargs.get("max_execution_time", 0)
+        max_execution_time = kwargs.get(
+            "max_execution_time", self.default_max_execution_time
+        )
         cursorclass = kwargs.get("cursorclass") or MySQLdb.cursors.Cursor
         try:
             conn = self.get_connection(db_name=db_name)
@@ -634,8 +637,10 @@ class MysqlEngine(EngineBase):
             raise RuntimeError(
                 f"{self.inc_engine.name}检测语句报错，错误信息：\n{check_result.error}"
             )
+        return self.execute_check_forbidden(check_result)
 
-        # 禁用/高危语句检查
+    def execute_check_forbidden(self, check_result):
+        """禁用/高危语句检查"""
         critical_ddl_regex = self.config.get("critical_ddl_regex", "")
         ddl_dml_separation = self.config.get("ddl_dml_separation", False)
         p = re.compile(critical_ddl_regex)
@@ -693,6 +698,66 @@ class MysqlEngine(EngineBase):
         #     return self.execute(db_name=workflow.db_name, sql=workflow.sqlworkflowcontent.sql_content)
         # inception执行
         return self.inc_engine.execute(workflow)
+
+    def execute_workflow_native(self, workflow):
+        """使用原生方法执行上线工单"""
+        db_name = workflow.db_name
+        sql = workflow.sqlworkflowcontent.sql_content
+
+        execute_result = ReviewSet(full_sql=sql)
+        conn = self.get_connection(db_name=db_name)
+        cursor = conn.cursor()
+        sql_list = split_sql(db_name, sql)
+        rowid = 0
+        for statement in sql_list:
+            rowid += 1
+            try:
+                cursor.execute(statement)
+                execute_result.rows.append(
+                    ReviewResult(
+                        id=rowid,
+                        errlevel=0,
+                        stagestatus="Execute Successfully",
+                        errormessage="None",
+                        sql=statement,
+                        affected_rows=0,
+                        execute_time=0,
+                    )
+                )
+            except Exception as e:
+                logger.warning(
+                    f"{self.name} 命令执行报错，语句：{sql}， 错误信息：{traceback.format_exc()}"
+                )
+                execute_result.error = str(e)
+                execute_result.rows.append(
+                    ReviewResult(
+                        id=rowid,
+                        errlevel=2,
+                        stagestatus="Execute Failed",
+                        errormessage=f"异常信息：{e}",
+                        sql=statement,
+                        affected_rows=0,
+                        execute_time=0,
+                    )
+                )
+
+                for statement in sql_list[rowid:]:
+                    rowid += 1
+                    execute_result.rows.append(
+                        ReviewResult(
+                            id=rowid,
+                            errlevel=0,
+                            stagestatus="Audit completed",
+                            errormessage="前序语句失败, 未执行",
+                            sql=statement,
+                            affected_rows=0,
+                            execute_time=0,
+                        )
+                    )
+                break
+
+        self.close()
+        return execute_result
 
     def execute(self, db_name=None, sql="", close_conn=True, parameters=None):
         """原生执行语句"""

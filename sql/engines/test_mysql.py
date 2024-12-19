@@ -309,6 +309,14 @@ class TestMysql(TestCase):
     @patch("MySQLdb.connect.cursor.execute")
     @patch("MySQLdb.connect.cursor")
     @patch("MySQLdb.connect")
+    def test_execute_workflow_native(self, _connect, _cursor, _execute):
+        new_engine = MysqlEngine(instance=self.ins1)
+        execute_result = new_engine.execute_workflow_native(self.wf)
+        self.assertIsInstance(execute_result, ReviewSet)
+
+    @patch("MySQLdb.connect.cursor.execute")
+    @patch("MySQLdb.connect.cursor")
+    @patch("MySQLdb.connect")
     def test_execute(self, _connect, _cursor, _execute):
         new_engine = MysqlEngine(instance=self.ins1)
         execute_result = new_engine.execute(self.wf)
