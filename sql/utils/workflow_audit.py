@@ -216,7 +216,6 @@ class AuditV2:
         p = re.compile(auto_review_regex, re.I)
 
         # 判断是否匹配到需要手动审核的语句
-        all_affected_rows = 0
         review_content = self.workflow.sqlworkflowcontent.review_content
         for review_row in json.loads(review_content):
             review_result = ReviewResult(**review_row)
@@ -227,13 +226,26 @@ class AuditV2:
                 # 匹配成功, 代表需要人工复核
                 return False
             # 影响行数加测, 总语句影响行数超过指定数量则需要人工审核
-            all_affected_rows += int(review_result.affected_rows)
-        if all_affected_rows > int(
+
+        if self.all_affected_rows > int(
             self.sys_config.get("auto_review_max_update_rows", 50)
         ):
             # 影响行数超规模, 需要人工审核
             return False
         return True
+
+    @property
+    def all_affected_rows(self) -> int:
+        """
+        获取工单所有影响行
+        """
+        all_affected_rows = 0
+        review_content = self.workflow.sqlworkflowcontent.review_content
+        for review_row in json.loads(review_content):
+            all_affected_rows += int(review_result.affected_rows)
+
+        return all_affected_rows
+
 
     def generate_audit_setting(self) -> AuditSetting:
         if self.is_auto_review():
@@ -250,8 +262,17 @@ class AuditV2:
             )
         except WorkflowAuditSetting.DoesNotExist:
             raise AuditException(f"审批类型 {self.workflow_type.label} 未配置审流")
+        
+        # DML审批流程自定义
+        audit_auth_groups = workflow_audit_setting.audit_auth_groups.split(",")
+        if self.workflow.syntax_type == 2 and SysConfig().get("dml_auto_audit") :
+            dml_max_rows = int(SysConfig().get("auto_dml_max_update_rows"))
+            if self.all_affected_rows < dml_max_rows:
+                n = SysConfig().get("dml_auto_level")         # dml免审批的级数
+                audit_auth_groups = audit_auth_groups[:-n]
+
         return AuditSetting(
-            audit_auth_groups=workflow_audit_setting.audit_auth_groups.split(",")
+            audit_auth_groups=audit_auth_groups
         )
 
     def create_audit(self) -> str:
